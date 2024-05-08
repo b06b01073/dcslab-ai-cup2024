@@ -44,5 +44,6 @@ python main.py -f IMAGE/0902_150000_151900/ -l LABEL/0902_150000_151900/ --out r
   * --out：保存輸出的目錄。
   * --width：裁剪圖片的寬度（默認為 256）。
   *  --buffer_size：儲存過去的frame的buffer的大小。
-  * --threshold：threshold for tracking objects.。
-  * --lambda_value：用於re-ranking的 Lambda 值。 
+  * --threshold：threshold for tracking objects。
+  * --lambda_value：用於re-ranking的 Lambda 值。
+  * --re_rank : 是否要使用re-rank。
