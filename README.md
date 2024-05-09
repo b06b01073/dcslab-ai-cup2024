@@ -1,3 +1,9 @@
+# Readme
+
+## Rules of conduct
+
+Read this [page](https://hackmd.io/@2aRuhhznQfOr_IvFkBUYKQ/SJ0KESMzR) first before you start working on this project.
+
 ## 簡介
 該repo實現了單鏡頭多物體追蹤，接收監視器的每一幀作為輸入，並輸出每幀畫面中每個物體的邊界框座標和 ID。輸出格式遵循 AI-CUP 數據集的結構。
 
