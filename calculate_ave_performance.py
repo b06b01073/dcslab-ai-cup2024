@@ -24,17 +24,20 @@ if __name__ == '__main__':
 
         ave_idf1 = 0
         ave_mota = 0
-
+        num = 0
         for date in date_list:
             file_path = os.path.join(args.result_dir,f'{date}_{args.parameter}_{i}')
             result_file = open(f'{file_path}/{args.cam}.txt', 'r')
 
             line = result_file.readline()
+            if line == "":
+                continue
             ave_idf1 += float(line.split(',')[0])
             ave_mota += float(line.split(',')[1])
+            num += 1
             result_file.close()
 
-        ave_idf1 /= len(date_list)
-        ave_mota /= len(date_list)
+        ave_idf1 /= num
+        ave_mota /= num
         f.write(f'{args.parameter} {i/100}, AVE IDF1 : {ave_idf1}, AVE MOTA : {ave_mota}\n')
        
