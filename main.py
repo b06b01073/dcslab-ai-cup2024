@@ -33,19 +33,32 @@ if __name__ == '__main__':
     parser.add_argument('--frame_dir', '-f', type=str, help='Directory containing input video frames.')
     parser.add_argument('--label_dir', '-l', type=str, help='Directory containing labels for input frames.')
     parser.add_argument('--model', '-m', type=str, default='resnet101_ibn_a', help='the name of the pre-trained PyTorch model')
-    parser.add_argument('--out', type=str, help='Directory to save the output video.')
+    parser.add_argument('--out', type=str, help='Directory to save the output labels.')
     parser.add_argument('--width', '-w', type=int, default=224)
     parser.add_argument('--buffer_size', type=int, default=1, help='size limit of the object buffer.')
     parser.add_argument('--visualize', '-v', type=str, default=False, help='Set to "True" to enable visualization of tracking results.')
-    parser.add_argument('--threshold', type=float, help='Set the threshold for tracking objects.')
-    parser.add_argument('--lambda_value', type=float, help='Set the lambda value for re-ranking.')
-    parser.add_argument('--re_rank', type=bool, default=False)
+    parser.add_argument('--threshold', type=float, default=0.5, help='Set the threshold for tracking objects.')
+    parser.add_argument('--lambda_value', type=float, default=0.8, help='Set the lambda value for re-ranking.')
+    parser.add_argument('--re_rank', type=bool, default=False, help='Specify whether to use re-ranking.')
+    parser.add_argument('--cam', default=0, type=int, help='Specify the CAM number to process.')
+    parser.add_argument('--finetune', default=False, type=bool, help='Specify whether in finetune mode')
     args = parser.parse_args()
 
 
+
+    # To check if it's in fine-tune mode
+    if args.finetune:
+        if args.buffer_size>=100:
+            args.buffer_size = int(args.buffer_size / 100)
+        if args.threshold>=10:
+            args.threshold /= 100
+        if args.lambda_value >= 10:
+            args.lambda_value /= 100
+
+
+
     # Create output directory if it does not exist
-    if not os.path.exists(f'{args.out}'):
-        os.mkdir(args.out)
+    os.makedirs(args.out, exist_ok=True)
 
     # Set up the FrameLoader to load frames
     frameloader = FrameLoader(args.frame_dir, args.label_dir)
@@ -63,9 +76,10 @@ if __name__ == '__main__':
     
     
     
-    # Iterate over each camera
-    for cam in range(8):
-        
+    # # Iterate over each camera
+    # for cam in range(8):
+    cam = args.cam
+    if True:    
         # Initialize frame ID for writing to output file
         frame_id = 1
 
@@ -78,7 +92,7 @@ if __name__ == '__main__':
             if not os.path.exists(video_dir):
                 os.mkdir(video_dir)
 
-            save_dir = os.path.join(video_dir, f'{args.out.split('/')[1]}')
+            save_dir = os.path.join(video_dir, f"{args.out.split('/')[1]}")
             if not os.path.exists(save_dir):
                 os.mkdir(save_dir)
 
@@ -95,7 +109,7 @@ if __name__ == '__main__':
 
         # Perform object tracking for each frame
         with torch.no_grad():
-            for i in tqdm(range(len(imgs))):
+            for i in tqdm(range(len(imgs)), dynamic_ncols=True):
                 current_objects = []    
                 object_embeddings = []
                 info_list = []
