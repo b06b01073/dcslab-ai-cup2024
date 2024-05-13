@@ -9,7 +9,8 @@ if __name__ == '__main__':
     parser.add_argument('--save_dir', '-s', type=str, help='Directory containing input video frames.')
     parser.add_argument('--label_dir', '-l', type=str, help='Directory containing labels for input frames.')
     args = parser.parse_args()
-
+    
+    os.makedirs(args.save_dir, exist_ok=True)
     
     camera_labels = defaultdict(list)
     # Iterate over files in the label directory
