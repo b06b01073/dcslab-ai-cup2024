@@ -33,19 +33,32 @@ if __name__ == '__main__':
     parser.add_argument('--frame_dir', '-f', type=str, help='Directory containing input video frames.')
     parser.add_argument('--label_dir', '-l', type=str, help='Directory containing labels for input frames.')
     parser.add_argument('--model', '-m', type=str, default='resnet101_ibn_a', help='the name of the pre-trained PyTorch model')
-    parser.add_argument('--out', type=str, help='Directory to save the output video.')
+    parser.add_argument('--out', type=str, help='Directory to save the output labels.')
     parser.add_argument('--width', '-w', type=int, default=224)
     parser.add_argument('--buffer_size', type=int, default=1, help='size limit of the object buffer.')
     parser.add_argument('--visualize', '-v', type=str, default=False, help='Set to "True" to enable visualization of tracking results.')
-    parser.add_argument('--threshold', type=float, help='Set the threshold for tracking objects.')
-    parser.add_argument('--lambda_value', type=float, help='Set the lambda value for re-ranking.')
-    parser.add_argument('--re_rank', type=bool, default=False)
+    parser.add_argument('--threshold', type=float, default=0.5, help='Set the threshold for tracking objects.')
+    parser.add_argument('--lambda_value', type=float, default=0.8, help='Set the lambda value for re-ranking.')
+    parser.add_argument('--re_rank', type=bool, default=False, help='Specify whether to use re-ranking.')
+    parser.add_argument('--cam', default=0, type=int, help='Specify the CAM number to process.')
+    parser.add_argument('--finetune', default=False, type=bool, help='Specify whether in finetune mode')
     args = parser.parse_args()
 
 
+
+    # To check if it's in fine-tune mode
+    if args.finetune:
+        if args.buffer_size >= 100:
+            args.buffer_size = int(args.buffer_size / 100)
+        if args.threshold >= 10:
+            args.threshold /= 100
+        if args.lambda_value >= 10:
+            args.lambda_value /= 100
+
+
+
     # Create output directory if it does not exist
-    if not os.path.exists(f'{args.out}'):
-        os.mkdir(args.out)
+    os.makedirs(args.out, exist_ok=True)
 
     # Set up the FrameLoader to load frames
     frameloader = FrameLoader(args.frame_dir, args.label_dir)
@@ -63,85 +76,85 @@ if __name__ == '__main__':
     
     
     
-    # Iterate over each camera
-    for cam in range(8):
-        
-        # Initialize frame ID for writing to output file
-        frame_id = 1
 
-        # Load data for the current camera
-        imgs, labels = frameloader.load(cam)
 
-        # Create video writer if visualization is enabled
-        if args.visualize:
-            video_dir = os.path.join(f'video_result')
-            if not os.path.exists(video_dir):
-                os.mkdir(video_dir)
+    
+    # Initialize frame ID for writing to output file
+    frame_id = 1
 
-            save_dir = os.path.join(video_dir, f'{args.out.split('/')[1]}')
-            if not os.path.exists(save_dir):
-                os.mkdir(save_dir)
+    # Load data for the current camera
+    imgs, labels = frameloader.load(args.cam)
 
-            save_path = os.path.join(save_dir, f'{cam}.mp4')
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
-            video_out = cv2.VideoWriter(save_path, fourcc, 2, (1280,  720)) 
+    # Create video writer if visualization is enabled
+    if args.visualize:
+        video_dir = os.path.join(f'video_result')
+        if not os.path.exists(video_dir):
+            os.mkdir(video_dir)
 
-        # Initialize Cropper and Matcher
-        cropper = Cropper(args.width)
+        save_dir = os.path.join(video_dir, f"{args.out.split('/')[1]}")
+        if not os.path.exists(save_dir):
+            os.mkdir(save_dir)
 
-        #basic threshold = 0.5
-        matcher = Matcher(threshold=args.threshold, buffer_size=args.buffer_size, lambda_value=args.lambda_value)
-        palette = Palette()
+        save_path = os.path.join(save_dir, f'{args.cam}.mp4')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
+        video_out = cv2.VideoWriter(save_path, fourcc, 2, (1280,  720)) 
 
-        # Perform object tracking for each frame
-        with torch.no_grad():
-            for i in tqdm(range(len(imgs))):
-                current_objects = []    
-                object_embeddings = []
-                info_list = []
-                info_list_norm = []
+    # Initialize Cropper and Matcher
+    cropper = Cropper(args.width)
+
+    #basic threshold = 0.5
+    matcher = Matcher(threshold=args.threshold, buffer_size=args.buffer_size, lambda_value=args.lambda_value)
+    palette = Palette()
+
+    # Perform object tracking for each frame
+    with torch.no_grad():
+        for i in tqdm(range(len(imgs)), dynamic_ncols=True):
+            current_objects = []    
+            object_embeddings = []
+            info_list = []
+            info_list_norm = []
+            
+            # Open a text file to record the label of each frame
+            out = os.path.join(args.out, f'{args.cam}')
+            if not os.path.exists(out):
+                os.mkdir(out)
+            f = open(f'{out}/{args.cam}_{frame_id:05}.txt', 'w')
+
+            # Crop objects from the current frame
+            current_objects, info_list, info_list_norm = cropper.crop_frame(image_path=imgs[i], label_path=labels[i])
+
+            # Extract features for each cropped object
+            for j in range(len(current_objects)):
+                img = transform(current_objects[j])
                 
-                # Open a text file to record the label of each frame
-                out = os.path.join(args.out, f'{cam}')
-                if not os.path.exists(out):
-                    os.mkdir(out)
-                f = open(f'{out}/{cam}_{frame_id:05}.txt', 'w')
+                _, feature, _ = extracter(torch.unsqueeze(img,0))
+                object_embeddings.append(torch.squeeze(feature).numpy())
 
-                # Crop objects from the current frame
-                current_objects, info_list, info_list_norm = cropper.crop_frame(image_path=imgs[i], label_path=labels[i])
+            #embedding normalization
+            if object_embeddings:
+                embedding_norm = np.linalg.norm(np.array(object_embeddings), axis=1, keepdims=True)
+                object_embeddings = np.array(object_embeddings) / embedding_norm
 
-                # Extract features for each cropped object
-                for j in range(len(current_objects)):
-                    img = transform(current_objects[j])
-                    
-                    _, feature, _ = extracter(torch.unsqueeze(img,0))
-                    object_embeddings.append(torch.squeeze(feature).numpy())
+            # Match object embeddings to previous frames
+            id_list =  matcher.match(np.array(object_embeddings), info_list, args.re_rank)
 
-                #embedding normalization
-                if object_embeddings:
-                    embedding_norm = np.linalg.norm(np.array(object_embeddings), axis=1, keepdims=True)
-                    object_embeddings = np.array(object_embeddings) / embedding_norm
+            # Record coordinates and IDs to the output file
+            for n in range(len(info_list)):
+                f.write(f'{args.cam} {info_list_norm[n][0]} {info_list_norm[n][1]} {info_list_norm[n][2]} {info_list_norm[n][3]} {id_list[n]}\n')
+            frame_id += 1
 
-                # Match object embeddings to previous frames
-                id_list =  matcher.match(np.array(object_embeddings), info_list, args.re_rank)
-
-                # Record coordinates and IDs to the output file
+            # Draw bounding boxes if visualization is enabled
+            if args.visualize:
+                image = cv2.imread(imgs[i])
                 for n in range(len(info_list)):
-                    f.write(f'{cam} {info_list_norm[n][0]} {info_list_norm[n][1]} {info_list_norm[n][2]} {info_list_norm[n][3]} {id_list[n]}\n')
-                frame_id += 1
+                    color = palette.get_color(id_list[n])
+                    cv2.rectangle(image, (info_list[n][0], info_list[n][1]), (info_list[n][2], info_list[n][3]), color, 2)
+                    cv2.putText(image, text=str(id_list[n]), org=(info_list[n][0], info_list[n][1] - 5), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=2, color=color, thickness=3)
 
-                # Draw bounding boxes if visualization is enabled
-                if args.visualize:
-                    image = cv2.imread(imgs[i])
-                    for n in range(len(info_list)):
-                        color = palette.get_color(id_list[n])
-                        cv2.rectangle(image, (info_list[n][0], info_list[n][1]), (info_list[n][2], info_list[n][3]), color, 2)
-                        cv2.putText(image, text=str(id_list[n]), org=(info_list[n][0], info_list[n][1] - 5), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=2, color=color, thickness=3)
+                video_out.write(image)
 
-                    video_out.write(image)
-
-        # Release video writer if visualization is enabled
-        if args.visualize:
-            video_out.release()
+    # Release video writer if visualization is enabled
+    if args.visualize:
+        video_out.release()
 
 
