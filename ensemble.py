@@ -8,6 +8,7 @@ from Cropper import Cropper
 from Matcher import Matcher
 from torchvision import transforms
 from tqdm import tqdm
+import json
 
 # Define a class to manage color palettes for different IDs
 class Palette:
@@ -32,7 +33,6 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--frame_dir', '-f', type=str, help='Directory containing input video frames.')
     parser.add_argument('--label_dir', '-l', type=str, help='Directory containing labels for input frames.')
-    #parser.add_argument('--model', '-m', type=str, default='resnet101_ibn_a', help='the name of the pre-trained PyTorch model') # not needed in ensemble version
     parser.add_argument('--out', type=str, help='Directory to save the output video.')
     parser.add_argument('--width', '-w', type=int, default=224)
     parser.add_argument('--buffer_size', type=int, default=1, help='size limit of the object buffer.')
@@ -56,13 +56,20 @@ if __name__ == '__main__':
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     
+    # Relative paths to folders containing files generated from individual models
+    models_files_folder = [
+        'result_label/resnet101_ibn_a',
+        'result_label/resnext101_ibn_a',
+        'result_label/densenet169_ibn_a',
+        'result_label/se_resnet101_ibn_a',
+        'result_label/swin_reid',
+    ]
     
     
-    models = ['resnet101_ibn_a', 'resnext101_ibn_a', 'densenet169_ibn_a', 'se_resnet101_ibn_a', 'swin_reid']
+    
     # Iterate over each camera
     for cam in range(8):
-        print(f'running cam {cam}')
-
+        
         # Initialize frame ID for writing to output file
         frame_id = 1
 
@@ -78,8 +85,9 @@ if __name__ == '__main__':
             save_dir = os.path.join(video_dir, f'{args.out.split("/")[1]}')
             if not os.path.exists(save_dir):
                 os.mkdir(save_dir)
+            
 
-            save_path = os.path.join(save_dir, f'{cam}_ensemble.mp4')
+            save_path = os.path.join(save_dir, f'{cam}.mp4')
             fourcc = cv2.VideoWriter_fourcc(*'mp4v') 
             video_out = cv2.VideoWriter(save_path, fourcc, 2, (1280,  720)) 
 
@@ -90,73 +98,50 @@ if __name__ == '__main__':
         matcher = Matcher(threshold=args.threshold, buffer_size=args.buffer_size, lambda_value=args.lambda_value)
         palette = Palette()
 
-        models_dist_matrices = []
-        object_embeddings_list = []
-        info_list_list = []
-        info_list_norm_list = []
         # Perform object tracking for each frame
         with torch.no_grad():
-            # Iterate over each model
-            for model in models:
-                print(f'running model: {model}')
-                extracter = torch.hub.load('b06b01073/veri776-pretrain', model, fine_tuned=True) # 將 fine_tuned 設為 True 會 load fine-tuned 後的 model
-                extracter = extracter.to('cpu')
-                extracter.eval()
+            for i in tqdm(range(len(imgs))):
 
-                dist_matrices = []
+                #load info list for this frame
+                with open(os.path.join(models_files_folder[0],str(cam),f'{frame_id}_info.json'),'r') as f:
+                    info_list = json.load(f)
 
-                for i in tqdm(range(len(imgs))):
-                    current_objects = []    
-                    object_embeddings = []
-                    info_list = []
-                    info_list_norm = []
-                    
+                #load normalized info list for this frame
+                with open(os.path.join(models_files_folder[0],str(cam),f'{frame_id}_info_norm.json'),'r') as f:
+                    info_list_norm = json.load(f)
 
-                    
-                    # Open a text file to record the label of each frame
-                    out = os.path.join(args.out, f'{cam}')
-                    if not os.path.exists(out):
-                        os.mkdir(out)
-                    
+                #load embeddings for this frame
+                object_embeddings = np.load(os.path.join(models_files_folder[0],str(cam),f'{frame_id}_embeddings.npy'))
 
-                    # Crop objects from the current frame
-                    current_objects, info_list, info_list_norm = cropper.crop_frame(image_path=imgs[i], label_path=labels[i])
-                    info_list_list.append(info_list)
-                    info_list_norm_list.append(info_list_norm)
 
-                    # Extract features for each cropped object
-                    for j in range(len(current_objects)):
-                        img = transform(current_objects[j])
-                        
-                        _, feature, _ = extracter(torch.unsqueeze(img,0))
-                        object_embeddings.append(torch.squeeze(feature).numpy())
+                # Open a text file to record the label of each frame
+                out = os.path.join(args.out, f'{cam}')
+                if not os.path.exists(out):
+                    os.mkdir(out)
+                f = open(f'{out}/{cam}_{frame_id:05}.txt', 'w')
 
-                    #embedding normalization
-                    if object_embeddings:
-                        embedding_norm = np.linalg.norm(np.array(object_embeddings), axis=1, keepdims=True)
-                        object_embeddings = np.array(object_embeddings) / embedding_norm
-                    
-                    object_embeddings_list.append(object_embeddings)
 
-                    # calculate distance matrix per model
-                    dist_matrix =  matcher.get_distance_matrix(np.array(object_embeddings), info_list, args.re_rank)  #stop at dist matrix, store file(?)
-                    dist_matrices.append(dist_matrix)
-                models_dist_matrices.append(dist_matrices)
-                    
-            # get id list from average distance matrix from all models
-            id_lists = matcher.get_ensemble_id_list(object_embeddings_list,  info_list_list, models_dist_matrices, args.re_rank)#get average of all models from files and make list
-            # Record coordinates and IDs to the output file
 
-            for frame_num, (info_list, info_list_norm, id_list) in enumerate(zip(info_list_list[:360],info_list_norm_list[:360], id_lists)):
-                f = open(f'{out}/{cam}_{frame_num:05}.txt', 'w')
+                #load distance matrices from all models
+                model_dist_mats = []
+                for model in models_files_folder:
+                    matrix = torch.load(os.path.join(model,str(cam), f'{frame_id}.pt'))
+                    model_dist_mats.append(matrix)
+
+ 
+
+                # Match object embeddings to previous frames
+                id_list=  matcher.get_ensemble_id_list(np.array(object_embeddings), info_list, model_dist_mats, args.re_rank)
+
+                # Record coordinates and IDs to the output file
                 for n in range(len(info_list)):
                     f.write(f'{cam} {info_list_norm[n][0]} {info_list_norm[n][1]} {info_list_norm[n][2]} {info_list_norm[n][3]} {id_list[n]}\n')
-                f.close()
 
-            # Draw bounding boxes if visualization is enabled
-            if args.visualize:
-                for frame_num, (id_list, info_list, id_list) in enumerate(zip(id_lists[:360], info_list_list[:360], id_lists)):
-                    image = cv2.imread(imgs[frame_num])
+                frame_id += 1
+
+                # Draw bounding boxes if visualization is enabled
+                if args.visualize:
+                    image = cv2.imread(imgs[i])
                     for n in range(len(info_list)):
                         color = palette.get_color(id_list[n])
                         cv2.rectangle(image, (info_list[n][0], info_list[n][1]), (info_list[n][2], info_list[n][3]), color, 2)
@@ -164,7 +149,8 @@ if __name__ == '__main__':
 
                     video_out.write(image)
 
-                # Release video writer if visualization is enabled
-                video_out.release()
+        # Release video writer if visualization is enabled
+        if args.visualize:
+            video_out.release()
 
-                
+

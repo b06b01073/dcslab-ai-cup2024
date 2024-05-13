@@ -8,6 +8,7 @@ from Cropper import Cropper
 from Matcher import Matcher
 from torchvision import transforms
 from tqdm import tqdm
+import json
 
 # Define a class to manage color palettes for different IDs
 class Palette:
@@ -40,6 +41,7 @@ if __name__ == '__main__':
     parser.add_argument('--threshold', type=float, help='Set the threshold for tracking objects.')
     parser.add_argument('--lambda_value', type=float, help='Set the lambda value for re-ranking.')
     parser.add_argument('--re_rank', type=bool, default=False)
+    parser.add_argument('--output_ensemble', type=bool, default=False, help='output distant matrix and info list to file for ensemble')
     args = parser.parse_args()
 
 
@@ -123,11 +125,25 @@ if __name__ == '__main__':
                     object_embeddings = np.array(object_embeddings) / embedding_norm
 
                 # Match object embeddings to previous frames
-                id_list =  matcher.match(np.array(object_embeddings), info_list, args.re_rank)
+                id_list, output_dist_mat =  matcher.match(np.array(object_embeddings), info_list, args.re_rank)
 
                 # Record coordinates and IDs to the output file
                 for n in range(len(info_list)):
                     f.write(f'{cam} {info_list_norm[n][0]} {info_list_norm[n][1]} {info_list_norm[n][2]} {info_list_norm[n][3]} {id_list[n]}\n')
+
+
+                if args.output_ensemble:
+                    save_folder = os.path.join(args.out, args.model, str(cam))
+                    os.makedirs(save_folder, exist_ok=True)
+                    torch.save(output_dist_mat, os.path.join(os.path.join(args.out, args.model, str(cam)),f'{frame_id}.pt'))
+                    
+                    with open(os.path.join(save_folder,f'{frame_id}_info.json'), 'w+') as f:
+                        json.dump(info_list, f)
+                    with open(os.path.join(save_folder,f'{frame_id}_info_norm.json'), 'w+') as f:
+                        json.dump(info_list_norm, f)
+
+                    np.save(os.path.join(save_folder,f'{frame_id}_embeddings'), object_embeddings)
+
                 frame_id += 1
 
                 # Draw bounding boxes if visualization is enabled
