@@ -26,8 +26,8 @@ if __name__ == '__main__':
         ave_mota = 0
         num = 0
         for date in date_list:
-            file_path = os.path.join(args.result_dir,f'{date}_{args.parameter}_{i}')
-            result_file = open(f'{file_path}/{args.cam}.txt', 'r')
+            file_path = os.path.join(args.result_dir,f'{date}_{args.parameter}_{i}',f'{args.cam}.txt')
+            result_file = open(f'{file_path}', 'r')
 
             line = result_file.readline()
             if line == "":
