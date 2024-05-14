@@ -8,6 +8,7 @@ from Cropper import Cropper
 from Matcher import Matcher
 from torchvision import transforms
 from tqdm import tqdm
+import json
 
 # Define a class to manage color palettes for different IDs
 class Palette:
@@ -42,6 +43,8 @@ if __name__ == '__main__':
     parser.add_argument('--re_rank', type=bool, default=False, help='Specify whether to use re-ranking.')
     parser.add_argument('--cam', default=0, type=int, help='Specify the CAM number to process.')
     parser.add_argument('--finetune', default=False, type=bool, help='Specify whether in finetune mode')
+    parser.add_argument('--output_ensemble', default=False, type=bool, help='Output model files for ensemble')
+
     args = parser.parse_args()
 
 
@@ -136,11 +139,25 @@ if __name__ == '__main__':
                 object_embeddings = np.array(object_embeddings) / embedding_norm
 
             # Match object embeddings to previous frames
-            id_list =  matcher.match(np.array(object_embeddings), info_list, args.re_rank)
+            id_list, output_dist_mat =  matcher.match(np.array(object_embeddings), info_list, args.re_rank)
+
 
             # Record coordinates and IDs to the output file
             for n in range(len(info_list)):
                 f.write(f'{args.cam} {info_list_norm[n][0]} {info_list_norm[n][1]} {info_list_norm[n][2]} {info_list_norm[n][3]} {id_list[n]}\n')
+
+            if args.output_ensemble:
+                    save_folder = os.path.join(args.out, args.model, str(args.cam))
+                    os.makedirs(save_folder, exist_ok=True)
+                    torch.save(output_dist_mat, os.path.join(os.path.join(args.out, args.model, str(args.cam)),f'{frame_id}.pt'))
+                    
+                    with open(os.path.join(save_folder,f'{frame_id}_info.json'), 'w+') as f:
+                        json.dump(info_list, f)
+                    with open(os.path.join(save_folder,f'{frame_id}_info_norm.json'), 'w+') as f:
+                        json.dump(info_list_norm, f)
+
+                    np.save(os.path.join(save_folder,f'{frame_id}_embeddings'), object_embeddings)
+
             frame_id += 1
 
             # Draw bounding boxes if visualization is enabled
@@ -151,10 +168,9 @@ if __name__ == '__main__':
                     cv2.rectangle(image, (info_list[n][0], info_list[n][1]), (info_list[n][2], info_list[n][3]), color, 2)
                     cv2.putText(image, text=str(id_list[n]), org=(info_list[n][0], info_list[n][1] - 5), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=2, color=color, thickness=3)
 
+
                 video_out.write(image)
 
     # Release video writer if visualization is enabled
     if args.visualize:
         video_out.release()
-
-

@@ -38,6 +38,7 @@ class Matcher():
         
         motion_tracklet = [[0] * 2] * len(obeject_embeddings)
 
+        output_dist_mat = torch.tensor(999)
         # Record the number of objects in the current frame
         self.object_in_frame.append(len(obeject_embeddings))
 
@@ -54,6 +55,7 @@ class Matcher():
             # Re-ranking the distance matrix if specified
             if rerank:
                 dist_matrix = self.re_ranking(q_q_dist, q_g_dist, g_g_dist, self.lambda_value)
+                output_dist_mat = self.re_ranking(q_q_dist, q_g_dist, g_g_dist, self.lambda_value)
 
                 selected_id = []
                 for _ in range(len(obeject_embeddings)):
@@ -72,9 +74,11 @@ class Matcher():
                             dist_matrix[row][col] = 2
                             _ -= 1
 
+
             # Directly match based on cosine similarity if not re-ranking
             else:
                 dist_matrix = self.compute_distmatrix(torch.from_numpy(obeject_embeddings))
+                output_dist_mat = self.compute_distmatrix(torch.from_numpy(obeject_embeddings))
 
                 selected_id = []
                 for _ in range(len(obeject_embeddings)):
@@ -112,7 +116,7 @@ class Matcher():
                 self.object_buffer.pop(0)
             self.object_in_frame.pop(0)
         
-        return id_list
+        return id_list, output_dist_mat
 
     def get_min(self, dist_matrix):
         """
@@ -346,3 +350,104 @@ class Matcher():
                 motion = [-1, 1]
                 matched = 1
         return matched, motion
+    
+
+
+    
+    def get_ensemble_id_list(self, object_embeddings, info_list, dist_matrices, rerank=True):
+        """
+        Match current objects to existing objects in the object buffer or assign new IDs.
+
+        Args:
+        - object_embeddings (list): List of 360 frames of embeddings for the current objects.
+        - info_list(list): List of information about the current objects.
+
+        Returns:
+        - id_list (list): List of IDs assigned to the current objects based on average of distance matrices from all models.
+        """
+
+        id_list = [-1] * len(object_embeddings)
+        
+        motion_tracklet = [[0] * 2] * len(object_embeddings)
+
+
+
+        # Record the number of objects in the current frame
+        self.object_in_frame.append(len(object_embeddings))
+
+        # Matching objects to existing objects in the object buffer
+        if self.object_buffer and object_embeddings.size != 0:
+            
+            #get the average distance matrix
+            for i, matrix in enumerate(dist_matrices):
+                if i == 0:
+                    average_dist_matrix = matrix
+                else:
+                    average_dist_matrix += matrix
+
+            average_dist_matrix /= len(dist_matrices)
+           
+            
+            
+
+            # Re-ranking the distance matrix if specified
+            if rerank:
+                selected_id = []
+                for _ in range(len(object_embeddings)):
+                    min_dist, row, col = self.get_min(average_dist_matrix)
+                    if min_dist == 2 or min_dist > self.threshold:
+                        break
+                    else:
+                        matched = 1
+                        
+                        if matched == 1 and self.object_buffer[col][2] not in selected_id:
+                            id_list[row] = self.object_buffer[col][2]
+                            selected_id.append(self.object_buffer[col][2])
+                            average_dist_matrix[row,:] = 2
+                            average_dist_matrix[:,col] = 2
+                        else:
+                            average_dist_matrix[row][col] = 2
+                            _ -= 1
+
+
+            # Directly match based on cosine similarity if not re-ranking
+            else:
+                selected_id = []
+                for _ in range(len(object_embeddings)):
+                    max_dist, row, col = self.get_max(average_dist_matrix)
+                    if max_dist == -2 or max_dist < self.threshold:
+                        break
+                    else:
+                        matched = 1
+                        #try:
+                        if matched == 1 and self.object_buffer[col][2] not in selected_id:
+                            id_list[row] = self.object_buffer[col][2]
+                            selected_id.append(self.object_buffer[col][2])
+                            average_dist_matrix[row,:] = -2
+                            average_dist_matrix[:,col] = -2
+                        else:
+                            average_dist_matrix[row][col] = -2
+                            _ -= 1
+
+
+        # Assigning new IDs to unmatched objects
+        for i in range(len(object_embeddings)):
+            if id_list[i] == -1:
+                id_list[i] = self.get_id(object_embeddings[i])
+        
+        # Add current objects into the object buffer
+        for i in range(len(object_embeddings)):
+            if id_list[i] == -1:
+                id_list[i] = self.id
+                self.id += 1
+
+            object_info = [object_embeddings[i], info_list[i], id_list[i], motion_tracklet[i]]
+            self.object_buffer.append(object_info)
+
+        # Remove old objects from the object buffer if buffer size exceeds the limit
+        if len(self.object_in_frame) > self.buffer_size:
+            for i in range(self.object_in_frame[0]):
+                self.object_buffer.pop(0)
+            self.object_in_frame.pop(0)
+
+        return id_list
