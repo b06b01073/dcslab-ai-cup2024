@@ -44,6 +44,7 @@ if __name__ == '__main__':
     parser.add_argument('--cam', default=0, type=int, help='Specify the CAM number to process.')
     parser.add_argument('--finetune', default=False, type=bool, help='Specify whether in finetune mode')
     parser.add_argument('--output_ensemble', default=False, type=bool, help='Output model files for ensemble')
+
     args = parser.parse_args()
 
 
@@ -140,6 +141,7 @@ if __name__ == '__main__':
             # Match object embeddings to previous frames
             id_list, output_dist_mat =  matcher.match(np.array(object_embeddings), info_list, args.re_rank)
 
+
             # Record coordinates and IDs to the output file
             for n in range(len(info_list)):
                 f.write(f'{args.cam} {info_list_norm[n][0]} {info_list_norm[n][1]} {info_list_norm[n][2]} {info_list_norm[n][3]} {id_list[n]}\n')
@@ -165,6 +167,7 @@ if __name__ == '__main__':
                     color = palette.get_color(id_list[n])
                     cv2.rectangle(image, (info_list[n][0], info_list[n][1]), (info_list[n][2], info_list[n][3]), color, 2)
                     cv2.putText(image, text=str(id_list[n]), org=(info_list[n][0], info_list[n][1] - 5), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=2, color=color, thickness=3)
+
 
                 video_out.write(image)
 

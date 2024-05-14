@@ -5,3 +5,12 @@ finetuned.pth
 aicup_gt
 result_label
 __pycache__
+.cache
+aicup_ts
+IMAGE
+LABEL
+MOT15
+ts_result
+video_result
+.bashrc
+.bash_history
