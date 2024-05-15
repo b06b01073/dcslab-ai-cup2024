@@ -94,7 +94,7 @@ if __name__ == '__main__':
         if not os.path.exists(video_dir):
             os.mkdir(video_dir)
 
-        save_dir = os.path.join(video_dir, f"{args.out.split('/')[1]}")
+        save_dir = os.path.join(video_dir, f"{args.out.split('/')[-1]}")
         if not os.path.exists(save_dir):
             os.mkdir(save_dir)
 
