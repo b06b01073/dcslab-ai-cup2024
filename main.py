@@ -33,7 +33,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--frame_dir', '-f', type=str, help='Directory containing input video frames.')
     parser.add_argument('--label_dir', '-l', type=str, help='Directory containing labels for input frames.')
-    parser.add_argument('--model', '-m', type=str, default='resnet101_ibn_a', help='the name of the pre-trained PyTorch model')
+    parser.add_argument('--model', '-m', type=str, default='swin_reid', help='the name of the pre-trained PyTorch model')
     parser.add_argument('--out', type=str, help='Directory to save the output labels.')
     parser.add_argument('--width', '-w', type=int, default=224)
     parser.add_argument('--buffer_size', type=int, default=1, help='size limit of the object buffer.')
@@ -44,9 +44,9 @@ if __name__ == '__main__':
     parser.add_argument('--cam', default=0, type=int, help='Specify the CAM number to process.')
     parser.add_argument('--finetune', default=False, type=bool, help='Specify whether in finetune mode')
     parser.add_argument('--output_ensemble', default=False, type=bool, help='Output model files for ensemble')
-
+    parser.add_argument('--gpu', action='store_true', default=True, help='Use GPU if available.')
     args = parser.parse_args()
-
+    device = torch.device("cuda:0" if args.gpu and torch.cuda.is_available() else "cpu")
 
 
     # To check if it's in fine-tune mode
@@ -68,8 +68,12 @@ if __name__ == '__main__':
 
     # Load the pre-trained model for feature extraction
     extracter = torch.hub.load('b06b01073/veri776-pretrain', args.model, fine_tuned=True) # 將 fine_tuned 設為 True 會 load fine-tuned 後的 model
-    extracter = extracter.to('cpu')
+    extracter = extracter.to(device)
     extracter.eval()
+
+    model_for_heatmap = torch.hub.load('b06b01073/veri776-pretrain', 'resnext101_ibn_a', fine_tuned=True)
+    model_for_heatmap.to(device)
+    model_for_heatmap.eval()
 
     # Normalize image pixels before feeding them to the model
     transform = transforms.Compose([
@@ -125,13 +129,40 @@ if __name__ == '__main__':
 
             # Crop objects from the current frame
             current_objects, info_list, info_list_norm = cropper.crop_frame(image_path=imgs[i], label_path=labels[i])
-
+            # Generate heatmaps for the current cropped objects using the specified model
+            heatmap_from_current_objects = cropper.get_heatmap_from_crop_frame(current_objects,model_for_heatmap,device)
             # Extract features for each cropped object
+       
             for j in range(len(current_objects)):
-                img = transform(current_objects[j])
+                # Apply transformations to the cropped object and move it to the device
+                img = transform(current_objects[j]).to(device)
                 
-                _, feature, _ = extracter(torch.unsqueeze(img,0))
-                object_embeddings.append(torch.squeeze(feature).numpy())
+                # Create a horizontally flipped version of the image
+                img_HorizontalFlip = transforms.functional.hflip(img).to(device)
+                
+                # Apply transformations to the corresponding heatmap and move it to the device
+                heatmap_img = transform(heatmap_from_current_objects[j]).to(device)
+                
+                # Create a horizontally flipped version of the heatmap
+                heatmap_img_HorizontalFlip = transforms.functional.hflip(heatmap_img).to(device)
+
+                # Extract features from the original image using the pre-trained model
+                _, img_feature, _ = extracter(torch.unsqueeze(img, 0))
+                
+                # Extract features from the heatmap image using the pre-trained model
+                _, heatmap_feature, _ = extracter(torch.unsqueeze(heatmap_img, 0))
+                
+                # Extract features from the horizontally flipped image using the pre-trained model
+                _, img_HorizontalFlip_feature, _ = extracter(torch.unsqueeze(img_HorizontalFlip, 0))
+                
+                # Extract features from the horizontally flipped heatmap using the pre-trained model
+                _, heatmap_HorizontalFlip_feature, _ = extracter(torch.unsqueeze(heatmap_img_HorizontalFlip, 0))
+                
+                # Average the features from the original, heatmap, and flipped versions to obtain the final feature
+                feature = (img_feature + heatmap_feature + img_HorizontalFlip_feature + heatmap_HorizontalFlip_feature) / 4.0
+                
+                # Append the final feature to the list of object embeddings
+                object_embeddings.append(torch.squeeze(feature).cpu().numpy())
 
             #embedding normalization
             if object_embeddings:
