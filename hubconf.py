@@ -1,0 +1,1 @@
+from model.model_api import resnet101_ibn_a, se_resnet101_ibn_a, densenet169_ibn_a, swin_reid, resnext101_ibn_a
