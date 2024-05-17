@@ -8,11 +8,11 @@ from torchvision.models.swin_transformer import swin_b, Swin_B_Weights
 __all__ = ['se_resnet_ibn_a', 'resnet101_ibn_a', 'resnext101_ibn_a', 'densenet169_ibn_a', 'swin_reid']
 
 model_urls = {
-    'resnet101_ibn_a': 'https://github.com/b06b01073/dcslab-ai-cup2024/releases/download/untagged-b63b46b50150767f2338/resnet.pth',
-    'resnext101_ibn_a': 'https://github.com/b06b01073/dcslab-ai-cup2024/releases/download/untagged-b63b46b50150767f2338/resnext.pth',
-    'se_resnet101_ibn_a': 'https://github.com/b06b01073/dcslab-ai-cup2024/releases/download/untagged-b63b46b50150767f2338/seresnet.pth',
-    'densenet169_ibn_a': 'https://github.com/b06b01073/dcslab-ai-cup2024/releases/download/untagged-b63b46b50150767f2338/densenet.pth',
-    'swin_reid': 'https://github.com/b06b01073/dcslab-ai-cup2024/releases/download/untagged-b63b46b50150767f2338/swin.pth',
+    'resnet101_ibn_a': 'https://github.com/b06b01073/dcslab-ai-cup2024/releases/download/v1-centloss/resnet.pth',
+    'resnext101_ibn_a': 'https://github.com/b06b01073/dcslab-ai-cup2024/releases/download/v1-centloss/resnext.pth',
+    'se_resnet101_ibn_a': 'https://github.com/b06b01073/dcslab-ai-cup2024/releases/download/v1-centloss/seresnet.pth',
+    'densenet169_ibn_a': 'https://github.com/b06b01073/dcslab-ai-cup2024/releases/download/v1-centloss/densenet.pth',
+    'swin_reid': 'https://github.com/b06b01073/dcslab-ai-cup2024/releases/download/v1-centloss/swin.pth',
 }
 
 
@@ -42,7 +42,7 @@ class SwinReID(nn.Module):
 class IBN_A(nn.Module):
     def __init__(self, backbone, pretrained=True, num_classes=3421, embedding_dim=2048):
         super().__init__()
-        self.backbone = get_backbone(backbone, pretrained=pretrained)
+        self.backbone = get_backbone(backbone)
 
         # the expected embedding space is \mathbb{R}^{2048}. resnet, seresnet, resnext satisfy this automatically
         if backbone == 'densenet':
@@ -85,7 +85,7 @@ def get_backbone(backbone):
 
 
 def load_from_url(model, url):
-    model.load_state_dict(torch.hub.load_state_dict_from_url(url), map_location=torch.device('cpu'))
+    model.load_state_dict(torch.hub.load_state_dict_from_url(url, map_location=torch.device('cpu')))
 
     return model
 
@@ -112,7 +112,7 @@ def resnext101_ibn_a():
 
 def se_resnet101_ibn_a():
     model = IBN_A(backbone='seresnet', pretrained=False, num_classes=3421)
-    model = load_from_url(model, model_urls['se_resnet_ibn_a'])
+    model = load_from_url(model, model_urls['se_resnet101_ibn_a'])
 
     return model
 
