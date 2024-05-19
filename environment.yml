@@ -1,4 +1,4 @@
-name: test
+name: aicup2024
 channels:
   - anaconda
   - pytorch
