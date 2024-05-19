@@ -8,6 +8,38 @@ Read this [page](https://hackmd.io/@2aRuhhznQfOr_IvFkBUYKQ/SJ0KESMzR) first befo
 該repo實現了單鏡頭多物體追蹤，接收監視器的每一幀作為輸入，並輸出每幀畫面中每個物體的邊界框座標和 ID。輸出格式遵循 AI-CUP 數據集的結構。
 
 可以透過track_evaluation.sh進行fine-tune.
+
+## 環境建立
+如果是使用linux環境，輸入以下指令即可:
+```
+conda env create -f environment.yml
+```
+若為windows則依序安裝下列package:
+```
+conda create --name aicup2024 python=3.12
+conda activate aicup2024
+conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
+conda install pandas
+conda install anaconda::scipy
+conda install conda-forge::tqdm
+conda install anaconda::xmltodict
+pip install opencv-python
+pip install loguru
+```
+若出現以下錯誤:
+```
+ImportError: libGL.so.1: cannot open shared object file: No such file or directory
+```
+執行以下指令:
+```
+pip uninstall opencv-python
+pip install opencv-python-headless
+```
+
+環境建立完成後:
+```
+conda activate aicup2024
+```
 ## single camera tracking 用法
 1. git clone
 ```
@@ -108,23 +140,22 @@ ts_result
 ```
 
 ## fine-tune參數使用方法
-1. 執行run_docker.sh
+若要評估單一模型執行track_evaluation.sh，track_evaluation.sh會遍歷所有模型所有日期以及相機
 ```
-./run_docker.sh
+./track_evaluation.sh -p threshold -s 50 -e 60 -t 1 -v False -d m
 ```
-2. 切換環境至botsort
+
+若要評估集成模型執行track_evaluation._ensemble.sh，
 ```
-conda activate botsort
-```
-3. 執行track_evaluation.sh
-```
-./track_evaluation.sh -p threshold -s 50 -e 60 -t 1 -v False -c 0
+./track_evaluation.sh -p threshold -s 50 -e 60 -t 1 -v False -d m
 ```
 * -p : 指定fine-tune的參數，[buffer_size, threshold]
 * -s 、 -e 、-t : 設置參數的區間，-s代表參數開始的值，-e代表參數結束的值，-t代表步長，因為shell script無法運算浮點數，
     因此在輸入參數時需要將值都乘以100，例如threshold的區間為0.5至0.6，步長為0.01，則須輸入-s 50 -e 60 -t 1。
-    
-評分結果會儲存在ts_result目錄下以cam編號為名字的目錄裡面的文字檔，檔名為fine-tune的參數，如下所示:
+* -v : 設定使否要輸出影片
+* -d : 設定使用早上還是晚上的資料集，m代表使用早上的資料集，n代表使用晚上的資料集
+
+若為單一模型則評分結果會儲存在ts_result目錄下以cam編號為名字的目錄裡面的文字檔，檔名為fine-tune的參數，如下所示:
 ```
 ts_result
 └── 7
