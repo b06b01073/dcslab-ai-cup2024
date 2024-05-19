@@ -118,9 +118,9 @@ if __name__ == '__main__':
             info_list_norm = []
             
             # Open a text file to record the label of each frame
-            out = os.path.join(args.out, f'{args.cam}')
+            out = os.path.join(args.out, args.model, f'{args.cam}')
             if not os.path.exists(out):
-                os.mkdir(out)
+                os.makedirs(out, exist_ok=True)
             f = open(f'{out}/{args.cam}_{frame_id:05}.txt', 'w')
 
             # Crop objects from the current frame
