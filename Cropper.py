@@ -11,6 +11,7 @@ class Cropper():
         self.cam = cam
         self.min_size = min_size
 
+
     def convert(self, W, H, x_center_norm, y_center_norm, w_norm, h_norm):
 
         """
@@ -96,6 +97,7 @@ class Cropper():
         Will use the coordinates of boudning boxes to determine if they're in the zones not interested in and if they're big enough to be considered. 
         This function will use the shapely library, might need to install it.
 
+
         Args:
         - image_path (str): Path to the image file.
         - label_path (str): Path to the label file containing bounding box information.
@@ -136,5 +138,3 @@ class Cropper():
             info = label.readline()
         
         return cropped_regions, info_list, info_list_norm
-    
-    
