@@ -32,6 +32,7 @@ class Matcher():
 
         Returns:
         - id_list (list): List of IDs assigned to the current objects
+        - output_dist_mat (tensor): Distance matrix used for matching
         """
         
         id_list = [-1] * len(obeject_embeddings)
@@ -78,7 +79,7 @@ class Matcher():
             # Directly match based on cosine similarity if not re-ranking
             else:
                 dist_matrix = self.compute_distmatrix(torch.from_numpy(obeject_embeddings))
-                output_dist_mat = self.compute_distmatrix(torch.from_numpy(obeject_embeddings))
+                output_dist_mat = dist_matrix.clone().detach()
 
                 selected_id = []
                 for _ in range(len(obeject_embeddings)):
@@ -306,9 +307,10 @@ class Matcher():
         x_len= len(object_embeddings)
         dist_matrix = torch.empty((x_len, y_len))
         for i in range(x_len):
-            for j in range(y_len):    
-                dist_matrix[i][j] = torch.nn.functional.cosine_similarity(object_embeddings[i], torch.from_numpy(self.object_buffer[j][0]), dim=0)
-        return dist_matrix
+            for j in range(y_len):
+                device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+                dist_matrix[i][j] = torch.nn.functional.cosine_similarity(object_embeddings[i].to(device), torch.from_numpy(self.object_buffer[j][0]).to(device), dim=0)
+        return dist_matrix.to("cpu")
     
     def get_id(self, obeject_embeddings):
 
