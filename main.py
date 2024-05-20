@@ -67,7 +67,7 @@ if __name__ == '__main__':
     frameloader = FrameLoader(args.frame_dir, args.label_dir)
 
     # Load the pre-trained model for feature extraction
-    extracter = torch.hub.load('b06b01073/veri776-pretrain', args.model, fine_tuned=True) # 將 fine_tuned 設為 True 會 load fine-tuned 後的 model
+    extracter = torch.hub.load('b06b01073/dcslab-ai-cup2024', args.model) # 將 fine_tuned 設為 True 會 load fine-tuned 後的 model
     extracter = extracter.to('cpu')
     extracter.eval()
 
@@ -118,9 +118,9 @@ if __name__ == '__main__':
             info_list_norm = []
             
             # Open a text file to record the label of each frame
-            out = os.path.join(args.out, f'{args.cam}')
+            out = os.path.join(args.out, args.model, f'{args.cam}')
             if not os.path.exists(out):
-                os.mkdir(out)
+                os.makedirs(out, exist_ok=True)
             f = open(f'{out}/{args.cam}_{frame_id:05}.txt', 'w')
 
             # Crop objects from the current frame

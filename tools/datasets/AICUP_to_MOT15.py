@@ -39,7 +39,8 @@ def AI_CUP_to_MOT15(args):
     img_height, img_width = args.imgsz
 
     for src_path in tqdm(total_files, desc='convert to MOT15 format'):
-        text = src_path.split(os.sep)
+        text = src_path.split('/')
+        
         if 'labels' in text:
             if timestamp != text[-2]:
                 timestamp = text[-2]
@@ -48,7 +49,6 @@ def AI_CUP_to_MOT15(args):
             frame_ID = frame_ID + 1
             f_mot15 = open(os.path.join(args.MOT15_dir, timestamp + '.txt'), 'a+')
             f_aicup = open(src_path, 'r')
-            
             for line in f_aicup.readlines():
                 data = line.split(' ')
                 bb_width = float(data[3]) * img_width

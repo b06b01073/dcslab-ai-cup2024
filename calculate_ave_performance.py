@@ -5,10 +5,13 @@ from argparse import ArgumentParser
 #              0924_150000_151900, 0924_190000_191900, 0925_150000_151900, 0925_190000_191900, 
 #              1015_150000_151900, 1015_190000_191900]
 
-date_list = ['0902_150000_151900', '0903_150000_151900', '0924_150000_151900', '0925_150000_151900', '1015_150000_151900']
+date_list = ['0902_150000_151900', '0903_150000_151900', '0924_150000_151900', '0925_150000_151900','1015_150000_151900']
+date_list = ['0902_150000_151900']
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--result_dir', '-f', type=str, help='Directory containing test result.')
+    parser.add_argument('--model', '-m', type=str, default='resnet101_ibn_a', help='the name of the pre-trained PyTorch model')
+    parser.add_argument('--ensemble', default=False, type=bool, help='Specify whether it is in ensemble mode')
     parser.add_argument('--parameter', '-p', type=str)
     parser.add_argument('--start', type=int)
     parser.add_argument('--end', type=int)
@@ -17,7 +20,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
 
-    save_path = os.path.join(args.result_dir, args.cam)
+    if args.ensemble:
+        save_path = os.path.join(args.result_dir, args.cam)
+    else:
+        save_path = os.path.join(args.result_dir, args.cam, args.model)
     os.makedirs(save_path, exist_ok=True)
     f = open(f'{save_path}/{args.parameter}.txt', 'w')
     for i in range(args.start, args.end+1, args.step):
@@ -26,7 +32,10 @@ if __name__ == '__main__':
         ave_mota = 0
         num = 0
         for date in date_list:
-            file_path = os.path.join(args.result_dir,f'{date}_{args.parameter}_{i}',f'{args.cam}.txt')
+            if args.ensemble:
+                file_path = os.path.join(args.result_dir,f'{date}_{args.parameter}_{i}',f'{args.cam}.txt')
+            else:
+                file_path = os.path.join(args.result_dir,f'{date}_{args.parameter}_{i}',args.model,f'{args.cam}.txt')
             result_file = open(f'{file_path}', 'r')
 
             line = result_file.readline()
