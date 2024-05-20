@@ -6,7 +6,6 @@ from argparse import ArgumentParser
 #              1015_150000_151900, 1015_190000_191900]
 
 date_list = ['0902_150000_151900', '0903_150000_151900', '0924_150000_151900', '0925_150000_151900','1015_150000_151900']
-date_list = ['0902_150000_151900']
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--result_dir', '-f', type=str, help='Directory containing test result.')

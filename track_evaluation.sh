@@ -9,7 +9,6 @@ step=10
 # 0924_190000_191900 0925_150000_151900 0925_190000_191900 1015_150000_151900 1015_190000_191900)
 date_list=(0902_150000_151900 0903_150000_151900 0924_150000_151900 0925_150000_151900 1015_150000_151900)
 model_list=(resnet101_ibn_a resnext101_ibn_a densenet169_ibn_a se_resnet101_ibn_a swin_reid)
-model_list=(resnet101_ibn_a)
 visualize=False
 time=m
 
@@ -45,12 +44,11 @@ done
 if [ $time == "m" ]
 then
     date_list=(0902_150000_151900 0903_150000_151900 0924_150000_151900 0925_150000_151900 1015_150000_151900)
-    date_list=(0902_150000_151900 0903_150000_151900)
 else
     date_list=(0902_190000_191900 0903_190000_191900 0924_190000_191900 0925_190000_191900 1015_190000_191900)
 fi
 
-for cam in {0..0}
+for cam in {0..7}
 do
     for((i=$start;i<=$end;i+=step))
     do
@@ -91,7 +89,7 @@ do
     done
 done
 
-for cam in {0..0}
+for cam in {0..7}
 do
     for model in "${model_list[@]}";
     do
