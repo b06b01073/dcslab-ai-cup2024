@@ -72,9 +72,9 @@ if __name__ == '__main__':
     models_files_folder = [
         'resnet101_ibn_a',
         'resnext101_ibn_a',
-        'densenet169_ibn_a',
-        'se_resnet101_ibn_a',
-        'swin_reid',
+        # 'densenet169_ibn_a',
+        # 'se_resnet101_ibn_a',
+        # 'swin_reid',
     ]
     
     

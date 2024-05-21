@@ -1,7 +1,7 @@
 tmp
-.mp4
+*.mp4
 finetuned.pth
-.pt
+*.pt
 aicup_gt
 result_label
 __pycache__
@@ -21,7 +21,11 @@ video_result_ensemble
 yolov8
 yolov9
 .config
-.txt
+*.txt
 aicup_ts_ensemble
 ts_result_ensemble
-
+cross_cams
+*.npy
+histogram
+center_loss
+origin_loss

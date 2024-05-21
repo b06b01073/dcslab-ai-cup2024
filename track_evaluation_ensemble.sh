@@ -3,7 +3,7 @@
 #default parameter
 param="threshold"
 start=50
-end=60
+end=50
 step=10
 # date_list=(0902_190000_191900 0903_150000_151900 0903_190000_191900 0924_150000_151900 \
 # 0924_190000_191900 0925_150000_151900 0925_190000_191900 1015_150000_151900 1015_190000_191900)
@@ -41,7 +41,7 @@ do
      esac
 done
 
-if [ $time = "m" ]
+if [ $time == "m" ]
 then
     date_list=(0902_150000_151900 0903_150000_151900 0924_150000_151900 0925_150000_151900 1015_150000_151900)
 else
@@ -95,6 +95,5 @@ done
 
 for cam in {0..7}
 do
-    echo
-    python calculate_ave_performance.py -f ts_result_ensemble/ -p "${param}" --start $start --end $end --step $step --cam $cam --ensemble True
+    python calculate_ave_performance.py -f ts_result_ensemble/ -p "${param}" --start $start --end $end --step $step --cam $cam --ensemble True --time $time
 done
