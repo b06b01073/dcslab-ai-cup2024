@@ -44,6 +44,8 @@ if __name__ == '__main__':
     parser.add_argument('--cam', default=0, type=int, help='Specify the CAM number to process.')
     parser.add_argument('--finetune', default=False, type=bool, help='Specify whether in finetune mode')
     parser.add_argument('--output_ensemble', default=False, type=bool, help='Output model files for ensemble')
+    parser.add_argument('--min_size', default=0, type=float, help='Minimum size of the object to be cropped')
+
 
     args = parser.parse_args()
 
@@ -103,7 +105,8 @@ if __name__ == '__main__':
         video_out = cv2.VideoWriter(save_path, fourcc, 2, (1280,  720)) 
 
     # Initialize Cropper and Matcher
-    cropper = Cropper(args.width)
+    cropper = Cropper(args.width, args.min_size)
+
 
     #basic threshold = 0.5
     matcher = Matcher(threshold=args.threshold, buffer_size=args.buffer_size, lambda_value=args.lambda_value)
