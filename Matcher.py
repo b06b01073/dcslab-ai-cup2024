@@ -21,12 +21,13 @@ class Matcher():
         self.id = 0 # Current ID for assigning to new objects
         self.lambda_value = lambda_value
     
+
     def match(self, obeject_embeddings, info_list, rerank=True):
         """
         Match current objects to existing objects in the object buffer or assign new IDs.
 
         Args:
-        - object_embeddings (list): List of embeddings for the current objects
+        - object_embeddings (tensor): List of embeddings for the current objects
         - info_list (list): List of information about the current objects
         - rerank (bool): Flag to specify whether to perform re-ranking
 
@@ -44,17 +45,18 @@ class Matcher():
         self.object_in_frame.append(len(obeject_embeddings))
 
         # Matching objects to existing objects in the object buffer
-        if self.object_buffer and obeject_embeddings.size != 0:
+        if self.object_buffer and obeject_embeddings.numel() != 0:
             
             gallery_embedding = self.get_gallery_embedding()
             
-            q_g_dist = self.dot(obeject_embeddings, gallery_embedding)
-            q_q_dist = self.dot(obeject_embeddings, obeject_embeddings)
-            g_g_dist = self.dot(gallery_embedding, gallery_embedding)
             
 
             # Re-ranking the distance matrix if specified
             if rerank:
+                q_g_dist = self.dot(obeject_embeddings, gallery_embedding)
+                q_q_dist = self.dot(obeject_embeddings, obeject_embeddings)
+                g_g_dist = self.dot(gallery_embedding, gallery_embedding)
+                
                 dist_matrix = self.re_ranking(q_q_dist, q_g_dist, g_g_dist, self.lambda_value)
                 output_dist_mat = self.re_ranking(q_q_dist, q_g_dist, g_g_dist, self.lambda_value)
 
@@ -78,7 +80,7 @@ class Matcher():
 
             # Directly match based on cosine similarity if not re-ranking
             else:
-                dist_matrix = self.compute_distmatrix(torch.from_numpy(obeject_embeddings))
+                dist_matrix = self.compute_distmatrix(obeject_embeddings)
                 output_dist_mat = dist_matrix.clone().detach()
 
                 selected_id = []
@@ -108,7 +110,7 @@ class Matcher():
             if id_list[i] == -1:
                 id_list[i] = self.id
                 self.id += 1
-            object_info = [obeject_embeddings[i], info_list[i], id_list[i], motion_tracklet[i]]
+            object_info = [obeject_embeddings[i].cpu().numpy(), info_list[i], id_list[i], motion_tracklet[i]]
             self.object_buffer.append(object_info)
 
         # Remove old objects from the object buffer if buffer size exceeds the limit
@@ -297,7 +299,7 @@ class Matcher():
         Compute the cosine similarity distance matrix between current and existing object embeddings.
 
         Args:
-        - object_embeddings (list): Embeddings for current objects
+        - object_embeddings (tensor): Embeddings for current objects
 
         Returns:
         - dist_matrix (tensor): Distance matrix between current and existing objects
@@ -309,8 +311,8 @@ class Matcher():
         for i in range(x_len):
             for j in range(y_len):
                 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-                dist_matrix[i][j] = torch.nn.functional.cosine_similarity(object_embeddings[i].to(device), torch.from_numpy(self.object_buffer[j][0]).to(device), dim=0)
-        return dist_matrix.to("cpu")
+                dist_matrix[i][j] = torch.nn.functional.cosine_similarity(object_embeddings[i], torch.from_numpy(self.object_buffer[j][0]).to(device), dim=0)
+        return dist_matrix
     
     def get_id(self, obeject_embeddings):
 

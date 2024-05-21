@@ -50,7 +50,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
 
-
+    
     # To check if it's in fine-tune mode
     if args.finetune:
         if args.buffer_size >= 100:
@@ -70,7 +70,9 @@ if __name__ == '__main__':
 
     # Load the pre-trained model for feature extraction
     extracter = torch.hub.load('b06b01073/dcslab-ai-cup2024', args.model) # 將 fine_tuned 設為 True 會 load fine-tuned 後的 model
-    extracter = extracter.to('cpu')
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print(f'model is running on {device}.')
+    extracter = extracter.to(device)
     extracter.eval()
 
     # Normalize image pixels before feeding them to the model
@@ -105,7 +107,7 @@ if __name__ == '__main__':
         video_out = cv2.VideoWriter(save_path, fourcc, 2, (1280,  720)) 
 
     # Initialize Cropper and Matcher
-    cropper = Cropper(args.width, args.min_size)
+    cropper = Cropper(args.width, args.cam, args.min_size)
 
 
     #basic threshold = 0.5
@@ -116,7 +118,7 @@ if __name__ == '__main__':
     with torch.no_grad():
         for i in tqdm(range(len(imgs)), dynamic_ncols=True):
             current_objects = []    
-            object_embeddings = []
+            object_embeddings = torch.empty(0, 2048).to(device)
             info_list = []
             info_list_norm = []
             
@@ -133,16 +135,16 @@ if __name__ == '__main__':
             for j in range(len(current_objects)):
                 img = transform(current_objects[j])
                 
-                _, feature, _ = extracter(torch.unsqueeze(img,0))
-                object_embeddings.append(torch.squeeze(feature).numpy())
+                _, feature, _ = extracter(torch.unsqueeze(img,0).to(device))
+                object_embeddings = torch.cat((object_embeddings, feature), dim=0)
 
             #embedding normalization
-            if object_embeddings:
-                embedding_norm = np.linalg.norm(np.array(object_embeddings), axis=1, keepdims=True)
-                object_embeddings = np.array(object_embeddings) / embedding_norm
+            if object_embeddings.numel() != 0:
+                embedding_norm = torch.linalg.norm(object_embeddings, dim=1, keepdims=True)
+                object_embeddings = object_embeddings / embedding_norm
 
             # Match object embeddings to previous frames
-            id_list, output_dist_mat =  matcher.match(np.array(object_embeddings), info_list, args.re_rank)
+            id_list, output_dist_mat =  matcher.match(object_embeddings, info_list, args.re_rank)
 
 
             # Record coordinates and IDs to the output file
@@ -159,7 +161,7 @@ if __name__ == '__main__':
                     with open(os.path.join(save_folder,f'{frame_id}_info_norm.json'), 'w+') as f:
                         json.dump(info_list_norm, f)
 
-                    np.save(os.path.join(save_folder,f'{frame_id}_embeddings'), object_embeddings)
+                    np.save(os.path.join(save_folder,f'{frame_id}_embeddings'), object_embeddings.cpu().numpy())
 
             frame_id += 1
 

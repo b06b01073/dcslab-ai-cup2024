@@ -5,7 +5,8 @@ from argparse import ArgumentParser
 #              0924_150000_151900, 0924_190000_191900, 0925_150000_151900, 0925_190000_191900, 
 #              1015_150000_151900, 1015_190000_191900]
 
-date_list = ['0902_150000_151900', '0903_150000_151900', '0924_150000_151900', '0925_150000_151900','1015_150000_151900']
+
+
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--result_dir', '-f', type=str, help='Directory containing test result.')
@@ -16,7 +17,14 @@ if __name__ == '__main__':
     parser.add_argument('--end', type=int)
     parser.add_argument('--step', type=int)
     parser.add_argument('--cam', type=str)
+    parser.add_argument('--time', type=str, help='Specify whether to use morning data or evening data.')
     args = parser.parse_args()
+
+    
+    if args.time == 'm':
+        date_list = ['0902_150000_151900', '0903_150000_151900', '0924_150000_151900', '0925_150000_151900','1015_150000_151900']
+    else:
+        date_list = ['0902_190000_191900', '0903_190000_191900', '0924_190000_191900', '0925_190000_191900', '1015_190000_191900']
 
 
     if args.ensemble:
@@ -24,7 +32,10 @@ if __name__ == '__main__':
     else:
         save_path = os.path.join(args.result_dir, args.cam, args.model)
     os.makedirs(save_path, exist_ok=True)
-    f = open(f'{save_path}/{args.parameter}.txt', 'w')
+    if args.time == 'm':
+        f = open(f'{save_path}/{args.parameter}.txt', 'w')
+    else:
+        f = open(f'{save_path}/night_{args.parameter}.txt', 'w')
     for i in range(args.start, args.end+1, args.step):
 
         ave_idf1 = 0

@@ -3,12 +3,13 @@
 #default parameter
 param="threshold"
 start=50
-end=60
+end=50
 step=10
 # date_list=(0902_190000_191900 0903_150000_151900 0903_190000_191900 0924_150000_151900 \
 # 0924_190000_191900 0925_150000_151900 0925_190000_191900 1015_150000_151900 1015_190000_191900)
 date_list=(0902_150000_151900 0903_150000_151900 0924_150000_151900 0925_150000_151900 1015_150000_151900)
 model_list=(resnet101_ibn_a resnext101_ibn_a densenet169_ibn_a se_resnet101_ibn_a swin_reid)
+
 visualize=False
 time=m
 
@@ -40,6 +41,7 @@ do
              ;;
      esac
 done
+
 
 if [ $time == "m" ]
 then
@@ -93,7 +95,7 @@ for cam in {0..7}
 do
     for model in "${model_list[@]}";
     do
-        echo python calculate_ave_performance.py -f ts_result -p "${param}" --start $start --end $end --step $step --cam $cam --model "$model"
-        python calculate_ave_performance.py -f ts_result -p "${param}" --start $start --end $end --step $step --cam $cam --model "$model"
+        echo python calculate_ave_performance.py -f ts_result -p "${param}" --start $start --end $end --step $step --cam $cam --model "$model" --time $time
+        python calculate_ave_performance.py -f ts_result -p "${param}" --start $start --end $end --step $step --cam $cam --model "$model" --time $time
     done
 done
