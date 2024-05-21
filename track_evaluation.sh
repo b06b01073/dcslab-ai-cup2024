@@ -93,7 +93,7 @@ done
 
 for cam in {0..7}
 do
-    for model in "${model_list[@]}"
+    for model in "${model_list[@]}";
     do
         echo python calculate_ave_performance.py -f ts_result -p "${param}" --start $start --end $end --step $step --cam $cam --model "$model" --time $time
         python calculate_ave_performance.py -f ts_result -p "${param}" --start $start --end $end --step $step --cam $cam --model "$model" --time $time

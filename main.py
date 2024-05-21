@@ -107,7 +107,7 @@ if __name__ == '__main__':
         video_out = cv2.VideoWriter(save_path, fourcc, 2, (1280,  720)) 
 
     # Initialize Cropper and Matcher
-    cropper = Cropper(args.width, args.min_size)
+    cropper = Cropper(args.width, args.cam, args.min_size)
 
 
     #basic threshold = 0.5
