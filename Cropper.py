@@ -56,8 +56,9 @@ class Cropper():
         y_center_norm = float(info[2])
         w_norm = float(info[3])
         h_norm = float(info[4])
+        car_id = int(info[5])
         
-        return x_center_norm, y_center_norm, w_norm, h_norm
+        return x_center_norm, y_center_norm, w_norm, h_norm, car_id
 
 
     def crop_frame(self, image_path, label_path):
@@ -89,10 +90,10 @@ class Cropper():
         
         while info:
             info = info.split(' ')
-            x_center_norm, y_center_norm, w_norm, h_norm = self.get_image_info(info)
+            x_center_norm, y_center_norm, w_norm, h_norm, car_id = self.get_image_info(info)
             left, top, w, h = self.convert(W, H, x_center_norm, y_center_norm, w_norm, h_norm)
-            info_list.append([left, top, left+w, top+h])
-            info_list_norm.append([x_center_norm, y_center_norm, w_norm, h_norm])
+            info_list.append([left, top, left+w, top+h, car_id])
+            info_list_norm.append([x_center_norm, y_center_norm, w_norm, h_norm, car_id])
             # Crop the image region based on the bounding box coordinates
             croped_img = (F.crop(image, top, left, h, w))/255
             transform = transforms.Compose([
