@@ -41,19 +41,27 @@ class Cropper():
         
         return left, top, w, h
 
-    def get_image_info(self, info):
+    def get_image_info(self, info, multi=False):
 
         """
-        Extract bounding box information from label file.
+        Extracts bounding box information from a label file.
 
         Args:
-        - info (list): List containing bounding box information.
+        - info (list): A list containing bounding box information.
+        - multi (bool, optional): If True, returns additional ID information. Defaults to False.
 
         Returns:
-        - x_center_norm (float): Normalized x-coordinate of the bounding box center.
-        - y_center_norm (float): Normalized y-coordinate of the bounding box center.
-        - w_norm (float): Normalized width of the bounding box.
-        - h_norm (float): Normalized height of the bounding box.
+        - tuple: If multi is False, returns a tuple containing:
+            - x_center_norm (float): Normalized x-coordinate of the bounding box center.
+            - y_center_norm (float): Normalized y-coordinate of the bounding box center.
+            - w_norm (float): Normalized width of the bounding box.
+            - h_norm (float): Normalized height of the bounding box.
+        If multi is True, returns a tuple containing:
+            - x_center_norm (float): Normalized x-coordinate of the bounding box center.
+            - y_center_norm (float): Normalized y-coordinate of the bounding box center.
+            - w_norm (float): Normalized width of the bounding box.
+            - h_norm (float): Normalized height of the bounding box.
+            - id_ (float): ID information of the bounding box.
         """
 
         x_center_norm = float(info[1])
@@ -61,7 +69,11 @@ class Cropper():
         w_norm = float(info[3])
         h_norm = float(info[4])
         
-        return x_center_norm, y_center_norm, w_norm, h_norm
+        if multi:
+            id_ = float(info[5])
+            return x_center_norm, y_center_norm, w_norm, h_norm, id_
+        else:
+            return x_center_norm, y_center_norm, w_norm, h_norm
     
     def inZone(self,left,top,w,h):
         cam0 = [[(0,0), (0,128), (98,186), (348,118), (430,115),(668,0)], [(747,0), (690,145), (730,148), (760,0)], [(816,0), (1083,195), (1280,234),(1280,0)]]
@@ -90,22 +102,25 @@ class Cropper():
             return False
 
 
-    def crop_frame(self, image_path, label_path):
+    def crop_frame(self, image_path, label_path, multi=False):
 
         """
         Crop regions of interest from the image based on bounding box information.
-        Will use the coordinates of boudning boxes to determine if they're in the zones not interested in and if they're big enough to be considered. 
-        This function will use the shapely library, might need to install it.
 
-
+        This function reads an image and its corresponding label file, extracts bounding box 
+        information, and crops regions of interest from the image. It checks if the bounding 
+        boxes are within certain zones and if they meet size criteria.
         Args:
         - image_path (str): Path to the image file.
         - label_path (str): Path to the label file containing bounding box information.
+        - multi (bool, optional): If True, returns additional ID information for each bounding 
+        box. Defaults to False.
 
         Returns:
-        - cropped_regions (tensor): Cropped regions of interest.
+        - cropped_regions (torch.Tensor): Tensor containing cropped regions of interest.
         - info_list (list): List containing bounding box coordinates for each cropped region.
-        - info_list_norm (list): List containing normalized bounding box coordinates for each cropped region.
+        - info_list_norm (list): List containing normalized bounding box coordinates for each 
+        cropped region.
         """
 
         image = read_image(image_path)
@@ -122,12 +137,20 @@ class Cropper():
         
         while info:
             info = info.split(' ')
-            x_center_norm, y_center_norm, w_norm, h_norm = self.get_image_info(info)
+            if multi:
+                x_center_norm, y_center_norm, w_norm, h_norm, id_ = self.get_image_info(info, multi)
+            else:
+                x_center_norm, y_center_norm, w_norm, h_norm = self.get_image_info(info)
             left, top, w, h = self.convert(W, H, x_center_norm, y_center_norm, w_norm, h_norm)
             
             if not self.inZone(left, top, w, h) and self.sizeCheck(w, h):
-                info_list.append([left, top, left+w, top+h])
-                info_list_norm.append([x_center_norm, y_center_norm, w_norm, h_norm])
+                if multi:
+                    info_list.append([left, top, left+w, top+h, id_])
+                    info_list_norm.append([x_center_norm, y_center_norm, w_norm, h_norm, id_])
+                else:
+                    info_list.append([left, top, left+w, top+h])
+                    info_list_norm.append([x_center_norm, y_center_norm, w_norm, h_norm])
+                
                 # Crop the image region based on the bounding box coordinates
                 croped_img = (F.crop(image, top, left, h, w))/255
                 transform = transforms.Compose([

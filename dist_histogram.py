@@ -19,14 +19,24 @@ print(f'model is running on {device}.')
 
 def draw_histogram(data, name):
     
-    hist, bins = np.histogram(data, bins=np.arange(-0.5, 1, 0.1))
-    plt.bar(bins[:-1], hist, width=0.1, color='skyblue', edgecolor='black')
+    hist, bins = np.histogram(data, bins=np.arange(-0.5, 1, 0.05))
+    plt.bar(bins[:-1], hist, width=0.05, color='skyblue', edgecolor='black')
     plt.xlabel('dist')
     plt.ylabel('num')
 
     plt.savefig(f'{name}.jpg')
     plt.close()
+def draw_histogram2(data1, data2, name):
+    
+    hist1, bins1 = np.histogram(data1, bins=np.arange(-0.5, 1, 0.05))
+    hist2, bins2 = np.histogram(data2, bins=np.arange(-0.5, 1, 0.05))
+    plt.bar(bins1[:-1], hist1, width=0.05, color='skyblue', edgecolor='black', alpha=0.5, label='intra')
+    plt.bar(bins2[:-1], hist2, width=0.05, color='salmon', edgecolor='black', alpha=0.5, label='inter')
+    plt.xlabel('dist')
+    plt.ylabel('num')
 
+    plt.savefig(f'{name}.jpg')
+    plt.close()
 def get_random_id(current_id, id_list):
     random_id = random.choice(id_list)
     while(random_id == current_id):
@@ -140,22 +150,22 @@ if __name__ == "__main__":
                 # print(f'inter_dist : {inter_dist}')
                 # print(f'intra_dist : {intra_dist}')
 
-        np.save(f'{args.date}_intra', intra_dist)
-        np.save(f'{args.date}_inter', inter_dist)
+        np.save(f'histogram/{args.date}_intra', intra_dist)
+        np.save(f'histogram/{args.date}_inter', inter_dist)
     
     else:
         intra_list = []
         inter_list = []
         for date in date_list:
-            intra = np.load(f'{date}_intra.npy')
-            inter = np.load(f'{date}_inter.npy')
+            intra = np.load(f'histogram/{date}_intra.npy')
+            inter = np.load(f'histogram/{date}_inter.npy')
             intra_list.append(intra)
             inter_list.append(inter)
         intra_list = np.concatenate(intra_list, axis=0)
         inter_list = np.concatenate(inter_list, axis=0)
         
-        draw_histogram(intra_list, 'intra_dist_hist')
-        draw_histogram(inter_list, 'inter_dist_hist')
-
+        draw_histogram(intra_list, 'intra_dist_hist_0.05')
+        draw_histogram(inter_list, 'inter_dist_hist_0.05')
+        draw_histogram2(intra_list, inter_list, 'both')
 
             
