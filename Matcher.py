@@ -3,7 +3,7 @@ import numpy as np
 ERROR = 10
 class Matcher():
 
-    def __init__(self, threshold, buffer_size, lambda_value):
+    def __init__(self, threshold=0.5, buffer_size=1, lambda_value=0.8):
 
         """
         Initialize the Matcher class with threshold, buffer size, and lambda value.
@@ -21,7 +21,33 @@ class Matcher():
         self.id = 0 # Current ID for assigning to new objects
         self.lambda_value = lambda_value
     
+    def multi_match(self, dist_matrix, matched_set, current_set):
+        matched_list = []
+        new_set = current_set.copy()
+        for _ in range(len(dist_matrix)):
+            max_dist, row, col = self.get_max(dist_matrix)
+            if max_dist == -2 or max_dist < self.threshold:
+                break
+            else:
+                key_1_list = list(matched_set.keys())
+                key_2_list = list(current_set.keys())
+                print(f'len of key_1_list : {len(key_1_list)}')
+                print(f'len of key_2_list : {len(key_2_list)}')
+                print(f'row : {row}')
+                print(f'col : {col}')
+                print(f'id {key_1_list[row]} in matched set is equal to id {key_2_list[col]} in current set')
+                print(f'dist between two id is {max_dist}.')
+                if key_2_list[col] not in matched_list:
+                    matched_list.append(key_2_list[col])
+                else:
+                    print(f'id {key_2_list[col]} is already matched.')
+                new_set[key_1_list[row]] = new_set.pop(key_2_list[col])
+                dist_matrix[row,:] = -2
+                dist_matrix[:,col] = -2
 
+        return new_set
+
+        
     def match(self, obeject_embeddings, info_list, rerank=True):
         """
         Match current objects to existing objects in the object buffer or assign new IDs.

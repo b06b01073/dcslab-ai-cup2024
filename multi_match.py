@@ -1,0 +1,173 @@
+import torch
+import os
+import numpy as np
+from argparse import ArgumentParser
+from FrameLoader import FrameLoader
+from torchvision import transforms
+from Cropper import Cropper
+from tqdm import tqdm
+from Matcher import Matcher
+
+date_list = ['0902_150000_151900', '0902_190000_191900', '0903_150000_151900', '0903_190000_191900',
+            '0924_150000_151900', '0924_190000_191900', '0925_150000_151900', '0925_190000_191900',
+            '1015_150000_151900', '1015_190000_191900', '1016_150000_151900', '1016_190000_191900']
+
+def cluster_max(list_1, list_2):
+    max_d = -100
+    for i in list_1:
+        for j in list_2:
+            d = torch.nn.functional.cosine_similarity(i, j, dim=0)
+            if d > max_d:
+                max_d = d
+
+    return max_d
+def cluster_min(list_1, list_2):
+    pass
+
+if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument('--date', '-d', default='0902_150000_151900', type=str)
+    parser.add_argument('--model', '-m', type=str, default='resnet101_ibn_a', help='the name of the pre-trained PyTorch model')
+    parser.add_argument('--width', '-w', type=int, default=224)
+    parser.add_argument('--threshold', '-t', type=float, default=0.4)
+    parser.add_argument('--mode', type=str, default='max', help='Specify the distance calculation method to be used.')
+    args = parser.parse_args()
+
+
+    # Load the pre-trained model for feature extraction
+    extracter = torch.hub.load('b06b01073/dcslab-ai-cup2024', args.model) 
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    print(f'model is running on {device}.')
+    extracter = extracter.to(device)
+    extracter.eval()
+
+    # Normalize image pixels before feeding them to the model
+    transform = transforms.Compose([
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
+
+
+    
+
+    matched_set = {}
+    out_folder = os.path.join(f'final_result_{args.mode}', f'{args.date}')
+
+
+    if not os.path.exists(out_folder):
+        os.makedirs(out_folder, exist_ok=True)
+    
+    for cam in range(8):
+
+        # Initialize Cropper and Matcher
+        cropper = Cropper(args.width, cam, 0)
+        
+        #basic threshold = 0.5
+        matcher = Matcher(threshold=args.threshold)
+
+        # Set up the FrameLoader to load frames
+        frameloader = FrameLoader(f'IMAGE/{args.date}', f'aicup_gt/labels/{args.date}/{cam}')
+
+        # Load data for the current camera
+        imgs, labels = frameloader.load(cam)
+        with torch.no_grad():
+            if len(matched_set) == 0:
+                for i in tqdm(range(len(imgs)), dynamic_ncols=True):
+                    current_objects, info_list, info_list_norm = cropper.crop_frame(image_path=imgs[i], label_path=labels[i], multi=True)
+
+                    # Extract features for each cropped object
+                    for n in range(len(current_objects)):
+                        img = transform(current_objects[n])                
+                        _, feature, _ = extracter(torch.unsqueeze(img,0).to(device))
+
+                        # print(f'frame {i} : ')
+                        # print(f'feature of object {n} : {feature}')
+                        # print(f'type of feature: {type(feature)}')
+                        # print(f'info {n} : {info_list[n]}')
+                        # print(f'info_norm {n} : {info_list_norm[n]}')
+                        
+                        id_ = int(info_list[n][4])
+
+                        if id_ not in matched_set:
+                            matched_set[id_] = [feature, [i], [info_list_norm[n][0:4]]]
+                        else:
+                            matched_set[id_][0] = torch.cat((matched_set[id_][0], feature), dim=0)
+                            matched_set[id_][1].append(i)
+                            matched_set[id_][2].append(info_list_norm[n][0:4])
+                
+                frame_wrote = set()
+                for key, value in matched_set.items():
+                    # print(f'value : {value}')
+                    # print('-----------'*10)
+                    for i in range(len(value[0])):
+                        frame_wrote.add(value[1][i]+1)
+                        f = open(f'{out_folder}/{cam}_{value[1][i]+1:05}.txt', 'a')
+                        f.write(f'0 {value[2][i][0]} {value[2][i][1]} {value[2][i][2]} {value[2][i][3]} {key}\n')
+                        f.close()
+
+                for i in range(1, 361):
+                    if i not in frame_wrote:
+                        f = open(f'{out_folder}/{cam}_{i:05}.txt', 'a')
+                        f.write(f'')
+                        f.close()
+
+            else:
+                current_set = {}
+
+                for i in tqdm(range(len(imgs)), dynamic_ncols=True):
+                    current_objects, info_list, info_list_norm = cropper.crop_frame(image_path=imgs[i], label_path=labels[i], multi=True)
+
+                    # Extract features for each cropped object
+                    for n in range(len(current_objects)):
+                        img = transform(current_objects[n])                
+                        _, feature, _ = extracter(torch.unsqueeze(img,0).to(device))
+
+                        
+                        id_ = int(info_list[n][4])
+                        if id_ not in current_set:
+                            current_set[id_] = [feature, [i], [info_list_norm[n][0:4]]]
+                        else:
+                            current_set[id_][0] = torch.cat((current_set[id_][0], feature), dim=0)
+                            current_set[id_][1].append(i)
+                            current_set[id_][2].append(info_list_norm[n][0:4])
+
+
+                # calculate dist matrix
+                dist_matrix = []
+                for key_1, value_1 in matched_set.items():
+                    dist = []
+                    for key_2, value_2 in current_set.items():
+                        dist.append(cluster_max(value_1[0], value_2[0]))
+                    
+                    dist_matrix.append(dist)
+                
+                # match
+                current_set = matcher.multi_match(torch.tensor(dist_matrix), matched_set, current_set)
+
+                frame_wrote = set()
+                for key, value in current_set.items():
+                    # print(f'value : {value}')
+                    # print('-----------'*10)
+                    for i in range(len(value[0])):
+                        frame_wrote.add(value[1][i]+1)
+                        f = open(f'{out_folder}/{cam}_{value[1][i]+1:05}.txt', 'a')
+                        f.write(f'0 {value[2][i][0]} {value[2][i][1]} {value[2][i][2]} {value[2][i][3]} {key}\n')
+                        f.close()
+
+                for i in range(1, 361):
+                    if i not in frame_wrote:
+                        f = open(f'{out_folder}/{cam}_{i:05}.txt', 'a')
+                        f.write(f'')
+                        f.close()
+
+                for key, value in current_set.items():
+
+                    
+                    if key not in matched_set:
+                        matched_set[key] = [value[0], value[1], value[2]]
+                    else:
+                        matched_set[key][0] = torch.cat((matched_set[key][0], value[0]), dim=0)
+                        for i in range(len(value[0])): 
+                            matched_set[key][1].append(value[1][i])
+                            matched_set[key][2].append(value[2][i])
+
+                    
