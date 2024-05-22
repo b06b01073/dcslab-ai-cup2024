@@ -13,6 +13,12 @@ model_urls = {
     'se_resnet101_ibn_a': 'https://github.com/b06b01073/dcslab-ai-cup2024/releases/download/v1-centloss/seresnet.pth',
     'densenet169_ibn_a': 'https://github.com/b06b01073/dcslab-ai-cup2024/releases/download/v1-centloss/densenet.pth',
     'swin_reid': 'https://github.com/b06b01073/dcslab-ai-cup2024/releases/download/v1-centloss/swin.pth',
+
+    'resnet101_ibn_a_use_test': 'https://github.com/b06b01073/dcslab-ai-cup2024/releases/download/v1-centloss/resnet_use_test.pth',
+    'resnext101_ibn_a_use_test': 'https://github.com/b06b01073/dcslab-ai-cup2024/releases/download/v1-centloss/resnext_use_test.pth',
+    'se_resnet101_ibn_a_use_test': 'https://github.com/b06b01073/dcslab-ai-cup2024/releases/download/v1-centloss/seresnet_use_test.pth',
+    'densenet169_ibn_a_use_test': 'https://github.com/b06b01073/dcslab-ai-cup2024/releases/download/v1-centloss/densenet_use_test.pth',
+    'swin_reid_use_test': 'https://github.com/b06b01073/dcslab-ai-cup2024/releases/download/v1-centloss/swin_use_test.pth',
 }
 
 
@@ -89,36 +95,42 @@ def load_from_url(model, url):
 
     return model
 
-def swin_reid():
-    model = SwinReID(num_classes=3421)
-    model = load_from_url(model, model_urls['swin_reid'])
+def swin_reid(use_test=False):
+    num_classes, url = (4295, model_urls['swin_reid_use_test']) if use_test else (3421, model_urls['swin_reid'])
+    model = SwinReID(num_classes=num_classes)
+    model = load_from_url(model, url)
 
     return model
 
 
-def resnet101_ibn_a():
-    model = IBN_A(backbone='resnet', pretrained=False, num_classes=3421)
-    model = load_from_url(model, model_urls['resnet101_ibn_a'])
+def resnet101_ibn_a(use_test=False):
+    num_classes, url = (4295, model_urls['resnet101_ibn_a_use_test']) if use_test else (3421, model_urls['resnet101_ibn_a'])
+    model = IBN_A(backbone='resnet', pretrained=False, num_classes=num_classes)
+    model = load_from_url(model, url)
 
     return model
 
 
-def resnext101_ibn_a():
-    model = IBN_A(backbone='resnext', pretrained=False, num_classes=3421)
-    model = load_from_url(model, model_urls['resnext101_ibn_a'])
+def resnext101_ibn_a(use_test=False):
+    num_classes, url = (4295, model_urls['resnext101_ibn_a_use_test']) if use_test else (3421, model_urls['resnext101_ibn_a'])
+    model = IBN_A(backbone='resnext', pretrained=False, num_classes=num_classes)
+    model = load_from_url(model, url)
 
     return model
 
 
-def se_resnet101_ibn_a():
-    model = IBN_A(backbone='seresnet', pretrained=False, num_classes=3421)
-    model = load_from_url(model, model_urls['se_resnet101_ibn_a'])
+def se_resnet101_ibn_a(use_test=False):
+    num_classes, url = (4295, model_urls['se_resnet101_ibn_a_use_test']) if use_test else (3421, model_urls['se_resnet101_ibn_a'])
+    model = IBN_A(backbone='seresnet', pretrained=False, num_classes=num_classes)
+    model = load_from_url(model, url)
 
     return model
 
 
-def densenet169_ibn_a():
-    model = IBN_A(backbone='densenet', pretrained=False, num_classes=3421)
-    model = load_from_url(model, model_urls['densenet169_ibn_a'])
+def densenet169_ibn_a(use_test=False):
+    num_classes, url = (4295, model_urls['densenet169_ibn_a_use_test']) if use_test else (3421, model_urls['densenet169_ibn_a'])
+
+    model = IBN_A(backbone='densenet', pretrained=False, num_classes=num_classes)
+    model = load_from_url(model, url)
 
     return model
