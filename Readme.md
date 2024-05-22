@@ -169,7 +169,7 @@ buffer_size 2.0, AVE IDF1 : 0.9355950572352348, AVE MOTA : 0.9698999148566754
 ## fine-tuned models
 ```
 # options: [resnet101_ibn_a, se_resnet101_ibn_a, densenet169_ibn_a, swin_reid, resnext101_ibn_a]
-net = torch.hub.load('b06b01073/dcslab-ai-cup2024', 'resnet101_ibn_a')
+net = torch.hub.load('b06b01073/dcslab-ai-cup2024', 'resnet101_ibn_a') # you can also set use_test=True if you want to use the model trained with training + testing set
 
 eu_embedding, cos_embedding, _ = net(processed_img) # processed_img.shape: (b, c, h, w)
 
