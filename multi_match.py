@@ -21,8 +21,41 @@ def cluster_max(list_1, list_2):
                 max_d = d
 
     return max_d
+    
 def cluster_min(list_1, list_2):
-    pass
+    min_d = 100
+    for i in list_1:
+        for j in list_2:
+            d = torch.nn.functional.cosine_similarity(i, j, dim=0)
+            if d < min_d:
+                min_d = d
+    return min_d
+
+def cluster_ave_v1(list_1, list_2):
+    len_1 = len(list_1)
+    len_2 = len(list_2)
+    sum_ = 0
+    for i in list_1:
+        for j in list_2:
+            d = torch.nn.functional.cosine_similarity(i, j, dim=0)
+            sum_ += d / (len_1 * len_2)
+    return sum_
+
+def cluster_ave_v2(list_1, list_2):
+    mean_1 = torch.mean(list_1, dim=0)
+    mean_2 = torch.mean(list_2, dim=0)
+    
+    d = torch.nn.functional.cosine_similarity(mean_1, mean_2, dim=0)
+           
+    return d
+
+MODE = {
+    'max' : cluster_max,
+    'min' : cluster_min,
+    'ave_v1' : cluster_ave_v1,
+    'ave_v2' : cluster_ave_v2
+}
+
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -31,7 +64,17 @@ if __name__ == '__main__':
     parser.add_argument('--width', '-w', type=int, default=224)
     parser.add_argument('--threshold', '-t', type=float, default=0.4)
     parser.add_argument('--mode', type=str, default='max', help='Specify the distance calculation method to be used.')
+    parser.add_argument('--finetune', default=False, type=bool, help='Specify whether in finetune mode')
     args = parser.parse_args()
+
+
+
+    out_folder = os.path.join(f'final_result','labels', f'{args.model}_{args.mode}_{int(args.threshold)}',f'{args.date}')
+
+    # To check if it's in fine-tune mode
+    if args.finetune:
+        args.threshold /= 100
+
 
 
     # Load the pre-trained model for feature extraction
@@ -50,7 +93,7 @@ if __name__ == '__main__':
     
 
     matched_set = {}
-    out_folder = os.path.join(f'final_result_{args.mode}', f'{args.date}')
+    
 
 
     if not os.path.exists(out_folder):
@@ -65,7 +108,7 @@ if __name__ == '__main__':
         matcher = Matcher(threshold=args.threshold)
 
         # Set up the FrameLoader to load frames
-        frameloader = FrameLoader(f'IMAGE/{args.date}', f'aicup_gt/labels/{args.date}/{cam}')
+        frameloader = FrameLoader(f'../../IMAGE/{args.date}', f'../../dcslab-ai-cup2024/aicup_gt/labels/{args.date}/{cam}')
 
         # Load data for the current camera
         imgs, labels = frameloader.load(cam)
@@ -78,12 +121,6 @@ if __name__ == '__main__':
                     for n in range(len(current_objects)):
                         img = transform(current_objects[n])                
                         _, feature, _ = extracter(torch.unsqueeze(img,0).to(device))
-
-                        # print(f'frame {i} : ')
-                        # print(f'feature of object {n} : {feature}')
-                        # print(f'type of feature: {type(feature)}')
-                        # print(f'info {n} : {info_list[n]}')
-                        # print(f'info_norm {n} : {info_list_norm[n]}')
                         
                         id_ = int(info_list[n][4])
 
@@ -96,8 +133,6 @@ if __name__ == '__main__':
                 
                 frame_wrote = set()
                 for key, value in matched_set.items():
-                    # print(f'value : {value}')
-                    # print('-----------'*10)
                     for i in range(len(value[0])):
                         frame_wrote.add(value[1][i]+1)
                         f = open(f'{out_folder}/{cam}_{value[1][i]+1:05}.txt', 'a')
@@ -136,8 +171,7 @@ if __name__ == '__main__':
                 for key_1, value_1 in matched_set.items():
                     dist = []
                     for key_2, value_2 in current_set.items():
-                        dist.append(cluster_max(value_1[0], value_2[0]))
-                    
+                        dist.append(MODE[args.mode](value_1[0], value_2[0]))
                     dist_matrix.append(dist)
                 
                 # match
@@ -145,8 +179,6 @@ if __name__ == '__main__':
 
                 frame_wrote = set()
                 for key, value in current_set.items():
-                    # print(f'value : {value}')
-                    # print('-----------'*10)
                     for i in range(len(value[0])):
                         frame_wrote.add(value[1][i]+1)
                         f = open(f'{out_folder}/{cam}_{value[1][i]+1:05}.txt', 'a')

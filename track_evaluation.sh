@@ -50,7 +50,7 @@ else
     date_list=(0902_190000_191900 0903_190000_191900 0924_190000_191900 0925_190000_191900 1015_190000_191900)
 fi
 
-for cam in {0..7}
+for cam in {3..7}
 do
     for((i=$start;i<=$end;i+=step))
     do
@@ -67,14 +67,14 @@ do
                 fi
 
                 # Start tracking the cars on the monitor.
-                echo python main.py -f IMAGE/$date -l LABEL/"$Label_from""$date" --$param $i --out aicup_ts/labels/"${date}_${param}_${i}" --visualize $visualize --cam $cam --finetune True --model $model
-                python main.py -f IMAGE/$date -l LABEL/"$Label_from""$date" --$param $i --out aicup_ts/labels/"${date}_${param}_${i}" --visualize $visualize --cam $cam --finetune True --model $model
+                echo python main.py -f ../../IMAGE/$date -l ../../LABEL/"$Label_from""$date" --$param $i --out aicup_ts/labels/"${date}_${param}_${i}" --visualize $visualize --cam $cam --finetune True --model $model
+                python main.py -f ../../IMAGE/$date -l ../../LABEL/"$Label_from""$date" --$param $i --out aicup_ts/labels/"${date}_${param}_${i}" --visualize $visualize --cam $cam --finetune True --model $model
 
                 # Confirm whether the ground truth file exists.
                 if ! [ -d MOT15/aicup_gt/$date ]
                 then
-                    echo python parseAicup.py -s aicup_gt/labels/$date -l LABEL/$date/
-                    python parseAicup.py -s aicup_gt/labels/$date -l LABEL/$date/
+                    echo python parseAicup.py -s aicup_gt/labels/$date -l ../../LABEL/$date/
+                    python parseAicup.py -s aicup_gt/labels/$date -l ../../LABEL/$date/
                     echo python tools/datasets/AICUP_to_MOT15.py --AICUP_dir aicup_gt/labels/$date --MOT15_dir MOT15/aicup_gt/$date
                     python tools/datasets/AICUP_to_MOT15.py --AICUP_dir aicup_gt/labels/$date --MOT15_dir MOT15/aicup_gt/$date
                 fi
@@ -91,7 +91,7 @@ do
     done
 done
 
-for cam in {0..7}
+for cam in {3..7}
 do
     for model in "${model_list[@]}";
     do
