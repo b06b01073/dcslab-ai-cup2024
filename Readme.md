@@ -166,6 +166,25 @@ ts_result
 buffer_size 1.0, AVE IDF1 : 0.8576504865060863, AVE MOTA : 0.9541107325987048
 buffer_size 2.0, AVE IDF1 : 0.9355950572352348, AVE MOTA : 0.9698999148566754
 ```
+
+## Multi-Camera Tracking Result
+|     | ave_v1 | ave_v2 | min  | max |
+| --- | ------ | ------ | ---- | --- |
+|    IDF1 |    80.7    |   63.5     |   96.2   |  57.1   |
+|     MOTA|    98.1| 96.4   | 99.7 |   96.4  |
+
+* $min$ $d(C_i, C_j)$ : $\mathop{\min}_{a \in C_i, b \in C_j} d(a,b)$
+
+
+* $max$ $d(C_i, C_j)$ : $\mathop{\max}_{a \in C_i, b \in C_j} d(a,b)$
+
+
+* $ave\_{v1}$ $d(C_i,C_j)$ : $\sum_{a \in C_i,b \in C_j} \frac{d(a,b)}{|C_i||C_j|}$
+
+
+* $ave\_v2$ $d(C_i,C_j)$ : $d(\frac{\sum_{a \in C_i}a}{|C_i|}, \frac{\sum_{b \in C_j}b}{|C_j|})$
+
+* $d(a,b)$是Cosine Similarity
 ## fine-tuned models
 ```
 # options: [resnet101_ibn_a, se_resnet101_ibn_a, densenet169_ibn_a, swin_reid, resnext101_ibn_a]
