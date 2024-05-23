@@ -54,12 +54,71 @@ class CNN(nn.Module):
         output = self.out(x)
         return output
     
-def multiCam(image_path, label_path):
-    carToNext = []
+def multiCam(camera_num):
+    carToNext = {}
     for i in range(0, 8):
         if not os.path.exists(str(i)):
             os.mkdir(str(i))
-    for j in range(0, 8):
+    if camera_num == -1:
+        for j in range(0, 8):
+            for k in range(1, 361):
+                if k < 10:
+                    tag = "_0000"
+                elif k < 100:
+                    tag = "_000"
+                else:
+                    tag = "_00"
+                image_path = "./images/" + str(j) + tag + str(k) + ".jpg"
+                label_path = "./labels/" + str(j) + tag + str(k) + ".txt"
+                Crop = Cropper(224)
+                img, info_list, info_list_norm = Crop.crop_frame2(image_path, label_path)
+                #print(info_list)
+                #break
+                camera = j
+                #print(img.size(dim=0))
+                for i in range(0, img.size(dim=0)):
+                    '''        
+                    'down'      :(0)
+                    'up'        :(1)
+                    'left'      :(2)
+                    'right'     :(3)
+                    'right_up'  :(4)
+                    'right_down':(5)
+                    'left_up'   :(6)
+                    'left_down' :(7)
+                    '''
+                    car_id = info_list[i][4]
+                    if j > 0 and car_id in carToNext:
+                        if carToNext[car_id] == j or carToNext[car_id] > j:
+                            print(car_id)
+                        else:
+                            print(car_id, carToNext[car_id])
+                    #print(j, k, car_id)
+                    direction = directionClassification(img[i])
+                    #print(direction[0])
+                    
+                    torchvision.utils.save_image(img[i], str(direction[0].item()) + "/" + str(car_id)+'.jpg') 
+                    #print(camera, direction[0].item())
+                    next_camera = toCamera(camera, direction[0].item())
+                    
+                    #print(j, k, car_id, direction[0].item(), next_camera)
+                    carToNext[car_id] = next_camera
+                    # if(car_id == 20):
+                    #     print(direction, next_camera)
+                    # try:
+                    #     carToNext[car_id] = next_camera
+                    # except:
+                    #     while True:
+                    #         try: 
+                    #             carToNext[car_id] = next_camera
+                    #             break
+                    #         except:
+                    #             carToNext.append(0)
+            
+        print(carToNext)
+            # for z in range(0,8):
+            #     print(carToNext.count(z))
+    else:
         for k in range(1, 361):
             if k < 10:
                 tag = "_0000"
@@ -67,13 +126,13 @@ def multiCam(image_path, label_path):
                 tag = "_000"
             else:
                 tag = "_00"
-            image_path = "./images/" + str(j) + tag + str(k) + ".jpg"
-            label_path = "./labels/" + str(j) + tag + str(k) + ".txt"
+            image_path = "./images/" + str(camera_num) + tag + str(k) + ".jpg"
+            label_path = "./labels/" + str(camera_num) + tag + str(k) + ".txt"
             Crop = Cropper(224)
-            img, info_list, info_list_norm = Crop.crop_frame(image_path, label_path)
+            img, info_list, info_list_norm = Crop.crop_frame2(image_path, label_path)
             #print(info_list)
             #break
-            camera = j
+            camera = camera_num
             #print(img.size(dim=0))
             for i in range(0, img.size(dim=0)):
                 '''        
@@ -96,18 +155,21 @@ def multiCam(image_path, label_path):
                 next_camera = toCamera(camera, direction[0].item())
                 
                 #print(j, k, car_id, direction[0].item(), next_camera)
-                try:
-                    carToNext[car_id] = next_camera
-                except:
-                    while True:
-                        try: 
-                            carToNext[car_id] = next_camera
-                            break
-                        except:
-                            carToNext.append(0)
+                carToNext[car_id] = next_camera
+                # try:
+                #     carToNext[car_id] = next_camera
+                # except:
+                #     while True:
+                #         try: 
+                #             carToNext[car_id] = next_camera
+                #             break
+                #         except:
+                #             carToNext.append(0)
+
         print(carToNext)
-        for z in range(0,8):
-            print(carToNext.count(z))
+        # for z in range(0,8):
+        #     print(carToNext.count(z))
+    return carToNext
     
 def toCamera(current_camera, direction):
     down = 0 
@@ -119,7 +181,7 @@ def toCamera(current_camera, direction):
     left_up = 6
     left_down = 7
     if current_camera == 0:
-        if direction == left_down or direction == down:
+        if direction == up or direction == left_up:
             return 1
     elif current_camera == 1:
         if direction == right or direction == right_down:
@@ -144,7 +206,5 @@ def toCamera(current_camera, direction):
     return -1
                 
         
-path = "7_00093"
-image_path = "./images/"+path+".jpg"
-label_path = "./labels/"+path+".txt"
-multiCam(image_path, label_path)
+
+multiCam(0)
