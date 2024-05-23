@@ -1,8 +1,5 @@
 
-
-
-date_list=(0902_150000_151900 0903_150000_151900 0924_150000_151900 0925_150000_151900 1015_150000_151900 \
-           0902_190000_191900 0903_190000_191900 0924_190000_191900 0925_190000_191900 1015_190000_191900)
+date_list=(0902_150000_151900 0903_150000_151900 0924_150000_151900 0925_150000_151900 1015_150000_151900 0902_190000_191900 0903_190000_191900 0924_190000_191900 0925_190000_191900 1015_190000_191900)
 model_list=(resnet101_ibn_a resnext101_ibn_a densenet169_ibn_a se_resnet101_ibn_a swin_reid)
 
 while getopts “m:s:e:t:?” argv
@@ -44,8 +41,8 @@ do
                 python tools/datasets/AICUP_to_MOT15.py --AICUP_dir ../../LABEL/labels/$date --MOT15_dir MOT15/multi_cam_gt
             fi
 
-            echo python tools/datasets/AICUP_to_MOT15.py --AICUP_dir final_result/labels/"${model}_${mode}_${i}"/"$date" --MOT15_dir MOT15/multi_cam_ts/"${model}_${mode}_${i}"/"${date}"
-            python tools/datasets/AICUP_to_MOT15.py --AICUP_dir final_result/labels/"${model}_${mode}_${i}"/"$date" --MOT15_dir MOT15/multi_cam_ts/"${model}_${mode}_${i}"/"${date}"
+            echo python tools/datasets/AICUP_to_MOT15.py --AICUP_dir final_result/labels/"${model}_${mode}_${i}"/"$date" --MOT15_dir MOT15/multi_cam_ts/"${model}_${mode}_${i}"
+            python tools/datasets/AICUP_to_MOT15.py --AICUP_dir final_result/labels/"${model}_${mode}_${i}"/"$date" --MOT15_dir MOT15/multi_cam_ts/"${model}_${mode}_${i}"
         done
         
         echo python tools/evaluate.py --gt_dir MOT15/multi_cam_gt/ --ts_dir MOT15/multi_cam_ts/"${model}_${mode}_${i}"

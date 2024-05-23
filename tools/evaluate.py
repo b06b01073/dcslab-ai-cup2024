@@ -39,7 +39,7 @@ def evaluate(gt_dir, ts_dir, mode, cam, ensemble, model):
 
         summary = mh.compute_many(accs, metrics=metrics, generate_overall=True)
         print("Score for total file: IDF1 ", summary.idf1.OVERALL, " + MOTA ", summary.mota.OVERALL, " = ", summary.idf1.OVERALL+summary.mota.OVERALL)
-        f.write(f"Score for total file: IDF1  {summary.idf1.OVERALL} + MOTA {summary.mota.OVERALL},  = {summary.idf1.OVERALL+summary.mota.OVERALL}")
+        f.write(f"Score for total file: IDF1  {summary.idf1.OVERALL} + MOTA {summary.mota.OVERALL}  = {summary.idf1.OVERALL+summary.mota.OVERALL}")
         f.close()
         # 完整的 motmetrics 各項評分成果 V
         logger.info(f'\n{mm.io.render_summary(summary, formatters=mh.formatters, namemap=mm.io.motchallenge_metric_names)}')

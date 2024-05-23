@@ -13,41 +13,41 @@ date_list = ['0902_150000_151900', '0902_190000_191900', '0903_150000_151900', '
             '1015_150000_151900', '1015_190000_191900', '1016_150000_151900', '1016_190000_191900']
 
 def cluster_max(list_1, list_2):
-    max_d = -100
+    max_sim = -100
     for i in list_1:
         for j in list_2:
-            d = torch.nn.functional.cosine_similarity(i, j, dim=0)
-            if d > max_d:
-                max_d = d
+            similarity = torch.nn.functional.cosine_similarity(i, j, dim=0)
+            if similarity > max_sim:
+                max_sim = similarity
 
-    return max_d
+    return max_sim
     
 def cluster_min(list_1, list_2):
-    min_d = 100
+    min_sim = 100
     for i in list_1:
         for j in list_2:
-            d = torch.nn.functional.cosine_similarity(i, j, dim=0)
-            if d < min_d:
-                min_d = d
-    return min_d
+            similarity = torch.nn.functional.cosine_similarity(i, j, dim=0)
+            if similarity < min_sim:
+                min_sim = similarity
+    return min_sim
 
 def cluster_ave_v1(list_1, list_2):
     len_1 = len(list_1)
     len_2 = len(list_2)
-    sum_ = 0
+    sum_sim = 0
     for i in list_1:
         for j in list_2:
-            d = torch.nn.functional.cosine_similarity(i, j, dim=0)
-            sum_ += d / (len_1 * len_2)
-    return sum_
+            similarity = torch.nn.functional.cosine_similarity(i, j, dim=0)
+            sum_sim += similarity / (len_1 * len_2)
+    return sum_sim
 
 def cluster_ave_v2(list_1, list_2):
-    mean_1 = torch.mean(list_1, dim=0)
-    mean_2 = torch.mean(list_2, dim=0)
+    mean_sim_1 = torch.mean(list_1, dim=0)
+    mean_sim_2 = torch.mean(list_2, dim=0)
     
-    d = torch.nn.functional.cosine_similarity(mean_1, mean_2, dim=0)
+    similarity = torch.nn.functional.cosine_similarity(mean_sim_1, mean_sim_2, dim=0)
            
-    return d
+    return similarity
 
 MODE = {
     'max' : cluster_max,
@@ -166,16 +166,16 @@ if __name__ == '__main__':
                             current_set[id_][2].append(info_list_norm[n][0:4])
 
 
-                # calculate dist matrix
-                dist_matrix = []
+                # calculate Cosine similarity matrix
+                cosine_sim_matrix = []
                 for key_1, value_1 in matched_set.items():
-                    dist = []
+                    similarity = []
                     for key_2, value_2 in current_set.items():
-                        dist.append(MODE[args.mode](value_1[0], value_2[0]))
-                    dist_matrix.append(dist)
+                        similarity.append(MODE[args.mode](value_1[0], value_2[0]))
+                    cosine_sim_matrix.append(similarity)
                 
                 # match
-                current_set = matcher.multi_match(torch.tensor(dist_matrix), matched_set, current_set)
+                current_set = matcher.multi_match(torch.tensor(cosine_sim_matrix), matched_set, current_set)
 
                 frame_wrote = set()
                 for key, value in current_set.items():
