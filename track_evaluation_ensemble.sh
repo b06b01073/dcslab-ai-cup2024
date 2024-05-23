@@ -65,18 +65,18 @@ do
             for model in "${model_list[@]}";
             do
                 # Start tracking the cars on the monitor.
-                echo python main.py -f IMAGE/$date -l LABEL/"$Label_from""$date" --$param $i --out dist_matrix/"${date}_${param}_${i}" --visualize $visualize --cam $cam --finetune True --model $model --output_ensemble True
-                python main.py -f IMAGE/"${date}" -l LABEL/"$Label_from""$date" --$param $i --out dist_matrix/"${date}_${param}_${i}" --visualize $visualize --cam $cam --finetune True --model $model --output_ensemble True
+                echo python main.py -f ../../IMAGE/$date -l ../../LABEL/"$Label_from""$date" --$param $i --out dist_matrix/"${date}_${param}_${i}" --visualize $visualize --cam $cam --finetune True --model $model --output_ensemble True
+                python main.py -f ../../IMAGE/"${date}" -l ../../LABEL/"$Label_from""$date" --$param $i --out dist_matrix/"${date}_${param}_${i}" --visualize $visualize --cam $cam --finetune True --model $model --output_ensemble True
             done
 
-            echo python ensemble.py -f IMAGE/$date -l LABEL/"$Label_from""$date" --$param $i --out aicup_ts_ensemble/labels/"${date}_${param}_${i}" --visualize $visualize --cam $cam --dist_dir dist_matrix --finetune True
-            python ensemble.py -f IMAGE/$date -l LABEL/"$Label_from""$date" --$param $i --out aicup_ts_ensemble/labels/"${date}_${param}_${i}" --visualize $visualize --cam $cam --dist_dir dist_matrix --finetune True
+            echo python ensemble.py -f ../../IMAGE/$date -l ../../LABEL/"$Label_from""$date" --$param $i --out aicup_ts_ensemble/labels/"${date}_${param}_${i}" --visualize $visualize --cam $cam --dist_dir dist_matrix --finetune True
+            python ensemble.py -f ../../IMAGE/$date -l ../../LABEL/"$Label_from""$date" --$param $i --out aicup_ts_ensemble/labels/"${date}_${param}_${i}" --visualize $visualize --cam $cam --dist_dir dist_matrix --finetune True
             
             # Confirm whether the ground truth file exists.
             if ! [ -d MOT15/aicup_gt/$date ]
             then
-                echo python parseAicup.py -s aicup_gt/labels/$date -l LABEL/$date/
-                python parseAicup.py -s aicup_gt/labels/$date -l LABEL/$date/
+                echo python parseAicup.py -s aicup_gt/labels/$date -l ../../LABEL/$date/
+                python parseAicup.py -s aicup_gt/labels/$date -l ../../LABEL/$date/
                 echo python tools/datasets/AICUP_to_MOT15.py --AICUP_dir aicup_gt/labels/$date --MOT15_dir MOT15/aicup_gt/$date
                 python tools/datasets/AICUP_to_MOT15.py --AICUP_dir aicup_gt/labels/$date --MOT15_dir MOT15/aicup_gt/$date
             fi

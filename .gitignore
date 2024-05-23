@@ -30,3 +30,7 @@ histogram
 center_loss
 origin_loss
 final_result_max
+final_result_min
+final_result_ave
+final_result_ave_2
+final_result

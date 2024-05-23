@@ -15,6 +15,14 @@ def evaluate(gt_dir, ts_dir, mode, cam, ensemble, model):
         accs = []
         names = []
 
+        folder_name = ts_dir.split('/')[-1]
+        save_dir = os.path.join('final_result_score')
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir, exist_ok=True)
+        print(f'save_dir : {save_dir}')
+        print(f'folder_name : {folder_name}')
+        f = open(f'{save_dir}/{folder_name}.txt', 'w')
+
         gt_files = sorted(os.listdir(gt_dir))
         ts_files = sorted(os.listdir(ts_dir))
 
@@ -31,6 +39,8 @@ def evaluate(gt_dir, ts_dir, mode, cam, ensemble, model):
 
         summary = mh.compute_many(accs, metrics=metrics, generate_overall=True)
         print("Score for total file: IDF1 ", summary.idf1.OVERALL, " + MOTA ", summary.mota.OVERALL, " = ", summary.idf1.OVERALL+summary.mota.OVERALL)
+        f.write(f"Score for total file: IDF1  {summary.idf1.OVERALL} + MOTA {summary.mota.OVERALL},  = {summary.idf1.OVERALL+summary.mota.OVERALL}")
+        f.close()
         # 完整的 motmetrics 各項評分成果 V
         logger.info(f'\n{mm.io.render_summary(summary, formatters=mh.formatters, namemap=mm.io.motchallenge_metric_names)}')
 
