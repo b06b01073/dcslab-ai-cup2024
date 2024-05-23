@@ -5,10 +5,11 @@
 Read this [page](https://hackmd.io/@2aRuhhznQfOr_IvFkBUYKQ/SJ0KESMzR) first before you start working on this project.
 
 ## 簡介
-該repo實現了單鏡頭多物體追蹤，接收監視器的每一幀作為輸入，並輸出每幀畫面中每個物體的邊界框座標和 ID。輸出格式遵循 AI-CUP 數據集的結構。
+出於意外把所有東西都推上來了
+主要有三個檔案 Multicamera.py, directiionmodel.py, cropper.py
+本repo主要使用於車子方向的判別與過濾每一台camera需要比對的embedding
 
-可以透過track_evaluation.sh進行fine-tune.
-## single camera tracking 用法
+## 本repo 用法
 1. git clone
 ```
 git clone https://github.com/Jonas0126/dcslab-ai-cup2024.git
