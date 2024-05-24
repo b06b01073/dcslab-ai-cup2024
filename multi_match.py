@@ -93,8 +93,8 @@ if __name__ == '__main__':
     
 
     matched_set = {}
+    ID_ = -1 #cause id start with 0
     
-
 
     if not os.path.exists(out_folder):
         os.makedirs(out_folder, exist_ok=True)
@@ -107,14 +107,19 @@ if __name__ == '__main__':
         #basic threshold = 0.5
         matcher = Matcher(threshold=args.threshold)
 
+        #check if the output of the single camera tracking.
+        if not os.path.exists(f'../../dcslab-ai-cup2024/aicup_ts/labels/0903_150000_151900_buffer_size_300/resnet101_ibn_a/{cam}'):
+            print(f'The output from camera {cam} does not exist.')
+            continue
         # Set up the FrameLoader to load frames
-        frameloader = FrameLoader(f'../../IMAGE/{args.date}', f'../../dcslab-ai-cup2024/aicup_gt/labels/{args.date}/{cam}')
+        frameloader = FrameLoader(f'../../IMAGE/{args.date}', f'../../dcslab-ai-cup2024/aicup_ts/labels/0903_150000_151900_threshold_50/resnet101_ibn_a/{cam}')
 
         # Load data for the current camera
         imgs, labels = frameloader.load(cam)
+
         with torch.no_grad():
             if len(matched_set) == 0:
-                for i in tqdm(range(len(imgs)), dynamic_ncols=True):
+                for i in tqdm(range(len(imgs)), dynamic_ncols=True, desc = f'{cam}/7'):
                     current_objects, info_list, info_list_norm = cropper.crop_frame(image_path=imgs[i], label_path=labels[i], multi=True)
 
                     # Extract features for each cropped object
@@ -133,11 +138,13 @@ if __name__ == '__main__':
                 
                 frame_wrote = set()
                 for key, value in matched_set.items():
+                    ID_ += 1
                     for i in range(len(value[0])):
                         frame_wrote.add(value[1][i]+1)
                         f = open(f'{out_folder}/{cam}_{value[1][i]+1:05}.txt', 'a')
                         f.write(f'0 {value[2][i][0]} {value[2][i][1]} {value[2][i][2]} {value[2][i][3]} {key}\n')
                         f.close()
+
 
                 for i in range(1, 361):
                     if i not in frame_wrote:
@@ -148,7 +155,7 @@ if __name__ == '__main__':
             else:
                 current_set = {}
 
-                for i in tqdm(range(len(imgs)), dynamic_ncols=True):
+                for i in tqdm(range(len(imgs)), dynamic_ncols=True, desc = f'{cam}/7'):
                     current_objects, info_list, info_list_norm = cropper.crop_frame(image_path=imgs[i], label_path=labels[i], multi=True)
 
                     # Extract features for each cropped object
@@ -180,12 +187,22 @@ if __name__ == '__main__':
 
 
                 frame_wrote = set()
+                tmp = current_set.copy()
                 for key, value in current_set.items():
+                    if key not in matched_ID:
+                        ID_ += 1
+                        tmp[ID_] = tmp.pop(key)
                     for i in range(len(value[0])):
                         frame_wrote.add(value[1][i]+1)
                         f = open(f'{out_folder}/{cam}_{value[1][i]+1:05}.txt', 'a')
-                        f.write(f'0 {value[2][i][0]} {value[2][i][1]} {value[2][i][2]} {value[2][i][3]} {key}\n')
+                        if key in matched_ID:
+                            f.write(f'0 {value[2][i][0]} {value[2][i][1]} {value[2][i][2]} {value[2][i][3]} {key}\n')
+                        else:
+                            f.write(f'0 {value[2][i][0]} {value[2][i][1]} {value[2][i][2]} {value[2][i][3]} {ID_}\n')
+
                         f.close()
+                current_set = tmp.copy()
+
 
                 for i in range(1, 361):
                     if i not in frame_wrote:
