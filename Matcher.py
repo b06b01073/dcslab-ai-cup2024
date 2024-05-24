@@ -32,21 +32,16 @@ class Matcher():
                 else:
                     key_1_list = list(matched_set.keys())
                     key_2_list = list(current_set.keys())
-                    # print(f'len of key_1_list : {len(key_1_list)}')
-                    # print(f'len of key_2_list : {len(key_2_list)}')
-                    # print(f'row : {row}')
-                    # print(f'col : {col}')
-                    # print(f'id {key_1_list[row]} in matched set is equal to id {key_2_list[col]} in current set')
-                    # print(f'dist between two id is {max_dist}.')
-                    if key_2_list[col] not in matched_list:
-                        matched_list.append(key_2_list[col])
+
+                    if key_1_list[row] not in matched_list:
+                        matched_list.append(key_1_list[row])
                     else:
-                        print(f'id {key_2_list[col]} is already matched.')
+                        print(f'id {key_1_list[row]} is already matched.')
                     new_set[key_1_list[row]] = new_set.pop(key_2_list[col])
                     dist_matrix[row,:] = -2
                     dist_matrix[:,col] = -2
 
-        return new_set
+        return new_set, matched_list
 
         
     def match(self, obeject_embeddings, info_list, rerank=True):
