@@ -112,7 +112,7 @@ if __name__ == '__main__':
             print(f'The output from camera {cam} does not exist.')
             continue
         # Set up the FrameLoader to load frames
-        frameloader = FrameLoader(f'../../IMAGE/{args.date}', f'../../dcslab-ai-cup2024/aicup_ts/labels/0903_150000_151900_threshold_50/resnet101_ibn_a/{cam}')
+        frameloader = FrameLoader(f'../../IMAGE/{args.date}', f'../../dcslab-ai-cup2024/aicup_gt/labels/{args.date}/{cam}')
 
         # Load data for the current camera
         imgs, labels = frameloader.load(cam)
