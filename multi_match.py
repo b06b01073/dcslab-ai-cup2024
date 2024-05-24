@@ -108,7 +108,7 @@ if __name__ == '__main__':
         matcher = Matcher(threshold=args.threshold)
 
         #check if the output of the single camera tracking.
-        if not os.path.exists(f'../../dcslab-ai-cup2024/aicup_ts/labels/0903_150000_151900_buffer_size_300/resnet101_ibn_a/{cam}'):
+        if not os.path.exists(f'../../dcslab-ai-cup2024/aicup_gt/labels/{args.date}/{cam}'):
             print(f'The output from camera {cam} does not exist.')
             continue
         # Set up the FrameLoader to load frames
