@@ -33,15 +33,19 @@ class Matcher():
                     key_1_list = list(matched_set.keys())
                     key_2_list = list(current_set.keys())
 
+
                     if key_1_list[row] not in matched_list:
                         matched_list.append(key_1_list[row])
                     else:
                         print(f'id {key_1_list[row]} is already matched.')
+
                     new_set[key_1_list[row]] = new_set.pop(key_2_list[col])
                     dist_matrix[row,:] = -2
                     dist_matrix[:,col] = -2
 
+
         return new_set, matched_list
+
 
         
     def match(self, obeject_embeddings, info_list, rerank=True):

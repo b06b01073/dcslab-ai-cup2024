@@ -9,6 +9,7 @@ from tqdm import tqdm
 from Matcher import Matcher
 
 
+
 def cluster_max(list_1, list_2):
     max_sim = -100
     for i in list_1:
@@ -66,7 +67,9 @@ if __name__ == '__main__':
 
 
 
-    out_folder = os.path.join(f'test_final_result','labels', f'{args.model}_{args.mode}_{int(args.threshold)}',f'{args.date}')
+
+    out_folder = os.path.join(f'final_result','labels', f'{args.model}_{args.mode}_{int(args.threshold)}',f'{args.date}')
+
 
     # To check if it's in fine-tune mode
     if args.finetune:
@@ -172,7 +175,9 @@ if __name__ == '__main__':
                     cosine_sim_matrix.append(similarity)
                 
                 # match
+
                 current_set, matched_ID = matcher.multi_match(torch.tensor(cosine_sim_matrix), matched_set, current_set)
+
 
                 frame_wrote = set()
                 for key, value in current_set.items():
@@ -187,6 +192,7 @@ if __name__ == '__main__':
                         f = open(f'{out_folder}/{cam}_{i:05}.txt', 'a')
                         f.write(f'')
                         f.close()
+
                 
                 # remove unmatched car
                 tmp = {}
@@ -195,6 +201,7 @@ if __name__ == '__main__':
                 matched_set = tmp.copy()
                 
                 for key, value in current_set.items():
+
 
                     if key not in matched_set:
                         matched_set[key] = [value[0], value[1], value[2]]
