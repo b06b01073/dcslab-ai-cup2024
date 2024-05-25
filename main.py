@@ -37,7 +37,7 @@ if __name__ == '__main__':
     parser.add_argument('--out', type=str, help='Directory to save the output labels.')
     parser.add_argument('--width', '-w', type=int, default=224)
     parser.add_argument('--buffer_size', type=int, default=1, help='size limit of the object buffer.')
-    parser.add_argument('--visualize', '-v', type=bool, default=False, help='Set to "True" to enable visualization of tracking results.')
+    parser.add_argument('--visualize', '-v', action='store_true', help='Set to "True" to enable visualization of tracking results.')
     parser.add_argument('--threshold', type=float, default=0.5, help='Set the threshold for tracking objects.')
     parser.add_argument('--lambda_value', type=float, default=0.8, help='Set the lambda value for re-ranking.')
     parser.add_argument('--re_rank', type=bool, default=False, help='Specify whether to use re-ranking.')
