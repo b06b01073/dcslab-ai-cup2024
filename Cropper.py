@@ -195,49 +195,5 @@ class Cropper():
             info = label.readline()
         
         return cropped_regions, info_list, info_list_norm
-    def crop_frame2(self, image_path, label_path):
-
-        """
-        Crop regions of interest from the image based on bounding box information.
-
-        Args:
-        - image_path (str): Path to the image file.
-        - label_path (str): Path to the label file containing bounding box information.
-
-        Returns:
-        - cropped_regions (tensor): Cropped regions of interest.
-        - info_list (list): List containing bounding box coordinates for each cropped region.
-        - info_list_norm (list): List containing normalized bounding box coordinates for each cropped region.
-        """
-
-        image = read_image(image_path)
-        H = image.shape[1]
-        W = image.shape[2]
-
-        #get bounding box info
-        label = open(label_path, 'r')
-        info_list = []
-        info_list_norm = []
-        info = label.readline()
-
-        cropped_regions = torch.empty((0, 3, self.img_width, self.img_width))
-        
-        while info:
-            info = info.split(' ')
-            x_center_norm, y_center_norm, w_norm, h_norm, car_id = self.get_image_info2(info)
-            left, top, w, h = self.convert(W, H, x_center_norm, y_center_norm, w_norm, h_norm)
-            info_list.append([left, top, left+w, top+h, car_id])
-            info_list_norm.append([x_center_norm, y_center_norm, w_norm, h_norm, car_id])
-            # Crop the image region based on the bounding box coordinates
-            croped_img = (F.crop(image, top, left, h, w))/255
-            transform = transforms.Compose([
-                transforms.Resize((self.img_width, self.img_width))
-            ])
-            croped_img = transform(croped_img)
-            cropped_regions = torch.cat((cropped_regions, torch.unsqueeze(croped_img, 0)))
-            info = label.readline()
-        
-
-
     
     
