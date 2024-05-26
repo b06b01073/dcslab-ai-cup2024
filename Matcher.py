@@ -17,6 +17,7 @@ class Matcher():
         self.threshold = threshold
         self.buffer_size = buffer_size
         self.object_buffer = [] # Object buffer stores information about tracked objects
+        self.partial_object_buffer = [] # Object buffer stores information about the top, left and right halves and top left, top right corners of tracked objects
         self.object_in_frame = [] # Number of objects in each frame
         self.id = 0 # Current ID for assigning to new objects
         self.lambda_value = lambda_value
@@ -48,18 +49,20 @@ class Matcher():
 
 
         
-    def match(self, obeject_embeddings, info_list, rerank=True):
+    def match(self, obeject_embeddings, partial_embeddings, info_list, rerank=True):
         """
         Match current objects to existing objects in the object buffer or assign new IDs.
 
         Args:
         - object_embeddings (tensor): List of embeddings for the current objects
+        - partial_embeddings (tensor): List of embeddings for the top, left and right halves and top left, top right corners of the current objects
         - info_list (list): List of information about the current objects
         - rerank (bool): Flag to specify whether to perform re-ranking
 
         Returns:
         - id_list (list): List of IDs assigned to the current objects
         - output_dist_mat (tensor): Distance matrix used for matching
+        - output_partial_dist_mat (tensor): Distance matrix used for matching the top, left and right halves and top left, top right corners of the current objects
         """
         
         id_list = [-1] * len(obeject_embeddings)
@@ -67,14 +70,17 @@ class Matcher():
         motion_tracklet = [[0] * 2] * len(obeject_embeddings)
 
         output_dist_mat = torch.tensor(999)
+        output_partial_dist_mat = torch.tensor(999)
+
         # Record the number of objects in the current frame
         self.object_in_frame.append(len(obeject_embeddings))
+        self.partial_object_in_frame.append(len(partial_embeddings))
 
         # Matching objects to existing objects in the object buffer
         if self.object_buffer and obeject_embeddings.numel() != 0:
             
             gallery_embedding = self.get_gallery_embedding()
-            
+            partial_gallery_embedding = self.get_partial_gallery_embedding()
             
 
             # Re-ranking the distance matrix if specified
@@ -84,7 +90,13 @@ class Matcher():
                 g_g_dist = self.dot(gallery_embedding, gallery_embedding)
                 
                 dist_matrix = self.re_ranking(q_q_dist, q_g_dist, g_g_dist, self.lambda_value)
-                output_dist_mat = self.re_ranking(q_q_dist, q_g_dist, g_g_dist, self.lambda_value)
+                output_dist_mat = dist_matrix.clone().detach()
+
+                q_g_partial_dist = self.dot(obeject_embeddings, partial_gallery_embedding)
+                g_g_partial_dist = self.dot(partial_gallery_embedding, partial_gallery_embedding)
+
+                partial_dist_mat = self.re_ranking(q_q_dist, q_g_partial_dist, g_g_partial_dist, self.lambda_value)
+                output_partial_dist_mat = partial_dist_mat.clone().detach()
 
                 selected_id = []
                 for _ in range(len(obeject_embeddings)):
@@ -108,6 +120,9 @@ class Matcher():
             else:
                 dist_matrix = self.compute_distmatrix(obeject_embeddings)
                 output_dist_mat = dist_matrix.clone().detach()
+
+                partial_dist_mat = self.compute_partial_distmatrix(obeject_embeddings)
+                output_partial_dist_mat = partial_dist_mat.clone().detach()
 
                 selected_id = []
                 for _ in range(len(obeject_embeddings)):
@@ -133,19 +148,25 @@ class Matcher():
         
         # Add current objects into the object buffer
         for i in range(len(obeject_embeddings)):
-            if id_list[i] == -1:
-                id_list[i] = self.id
-                self.id += 1
             object_info = [obeject_embeddings[i].cpu().numpy(), info_list[i], id_list[i], motion_tracklet[i]]
             self.object_buffer.append(object_info)
+
+        for i in range(len(partial_embeddings)):
+            partial_object_info = [partial_embeddings[i].cpu().numpy(), info_list[i//5], id_list[i//5], motion_tracklet[i//5]]
+            self.partial_object_buffer.append(partial_object_info)
 
         # Remove old objects from the object buffer if buffer size exceeds the limit
         if len(self.object_in_frame) > self.buffer_size:
             for i in range(self.object_in_frame[0]):
                 self.object_buffer.pop(0)
             self.object_in_frame.pop(0)
+
+        if len(self.partial_object_in_frame) > self.buffer_size:
+            for i in range(self.partial_object_in_frame[0]):
+                self.partial_object_buffer.pop(0)
+            self.partial_object_in_frame.pop(0)
         
-        return id_list, output_dist_mat
+        return id_list, output_dist_mat, output_partial_dist_mat
 
     def get_min(self, dist_matrix):
         """
@@ -198,6 +219,20 @@ class Matcher():
             gallery_embedding.append(self.object_buffer[i][0])
 
         return np.array(gallery_embedding)
+
+    def get_partial_gallery_embedding(self):
+        """
+        Get embeddings of the top, left and right halves and top left, top right corners of objects in the gallery (partial object buffer).
+
+        Returns:
+        - partial_gallery_embedding (np.array): Array of embeddings of the top, left and right halves and top left, top right corners of objects in the gallery
+        """
+        partial_gallery_embedding = []
+        gallery_len = len(self.partial_object_buffer)
+        for i in range(gallery_len):
+            partial_gallery_embedding.append(self.partial_object_buffer[i][1])
+
+        return np.array(partial_gallery_embedding)
 
 
     
@@ -339,6 +374,28 @@ class Matcher():
                 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
                 dist_matrix[i][j] = torch.nn.functional.cosine_similarity(object_embeddings[i], torch.from_numpy(self.object_buffer[j][0]).to(device), dim=0)
         return dist_matrix
+
+
+        def compute_partial_distmatrix(self, object_embeddings):
+
+        """
+        Compute the cosine similarity distance matrix between current object embeddings and existing partial object embeddings.
+
+        Args:
+        - object_embeddings (tensor): Embeddings for current objects
+
+        Returns:
+        - dist_matrix (tensor): Distance matrix between current objects and existing partial objects
+        """
+
+        y_len = len(self.partial_object_buffer)
+        x_len= len(object_embeddings)
+        dist_matrix = torch.empty((x_len, y_len))
+        for i in range(x_len):
+            for j in range(y_len):
+                device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+                dist_matrix[i][j] = torch.nn.functional.cosine_similarity(object_embeddings[i], torch.from_numpy(self.partial_object_buffer[j][0]).to(device), dim=0)
+        return dist_matrix
     
     def get_id(self, obeject_embeddings):
 
@@ -404,6 +461,7 @@ class Matcher():
 
         # Record the number of objects in the current frame
         self.object_in_frame.append(len(object_embeddings))
+        self.partial_object_in_frame.append(len(object_embeddings)*5)
 
         # Matching objects to existing objects in the object buffer
         if self.object_buffer and object_embeddings.size != 0:
@@ -438,6 +496,130 @@ class Matcher():
                         else:
                             average_dist_matrix[row][col] = 2
                             _ -= 1
+                # Check if there are any unmatched objects and try to match with partial objects
+                if any(x == -1 for x in id_list) :
+                    for idx in range(len(object_embeddings)):
+
+                        if id_list[idx] != -1 or info_list[idx][3] < 710:
+
+                            continue
+
+                        for i, matrix in enumerate(partial_dist_matrices):
+                            if i == 0:
+                                average_partial_dist_matrix = matrix
+                            else:
+                                average_partial_dist_matrix += matrix
+                        average_partial_dist_matrix /= len(partial_dist_matrices)
+
+                        min_dist_partial, row_partial, col_partial = self.get_min(average_partial_dist_matrix)
+                        if min_dist_partial == 2 or min_dist_partial > self.partial_threshold:
+                            break
+                        else:
+
+                            matched = 1
+
+                            if matched == 1 and self.partial_object_buffer[col_partial][2] not in selected_id:
+                                selected_id.append(self.partial_object_buffer[col_partial][2])
+                                id_list[row_partial//5] = self.partial_object_buffer[col_partial][2]
+
+                                # mark ID for other parts of the same objects
+                                if col_partial % 5 == 0: # top half selected
+                                    average_partial_dist_matrix[row_partial,:] = 2
+                                    average_partial_dist_matrix[:,col_partial] = 2
+
+                                    average_partial_dist_matrix[:,col_partial+1] = 2
+                                    average_partial_dist_matrix[:,col_partial+2] = 2
+                                    average_partial_dist_matrix[:,col_partial+3] = 2
+                                    average_partial_dist_matrix[:,col_partial+4] = 2
+
+                                
+                                elif col_partial % 5 == 1: # left half selected
+                                    average_partial_dist_matrix[row_partial,:] = 2
+                                    average_partial_dist_matrix[:,col_partial] = 2
+
+                                    average_partial_dist_matrix[:,col_partial-1] = 2
+                                    average_partial_dist_matrix[:,col_partial+1] = 2
+                                    average_partial_dist_matrix[:,col_partial+2] = 2
+                                    average_partial_dist_matrix[:,col_partial+3] = 2
+
+                                
+                                elif col_partial % 5 == 2: # right half selected
+                                    average_partial_dist_matrix[row_partial,:] = 2
+                                    average_partial_dist_matrix[:,col_partial] = 2
+
+                                    average_partial_dist_matrix[:,col_partial-1] = 2
+                                    average_partial_dist_matrix[:,col_partial-2] = 2
+                                    average_partial_dist_matrix[:,col_partial+1] = 2
+                                    average_partial_dist_matrix[:,col_partial+2] = 2
+                                
+                                elif col_partial % 5 == 3: # top left selected
+                                    average_partial_dist_matrix[row_partial,:] = 2
+                                    average_partial_dist_matrix[:,col_partial] = 2
+
+                                    average_partial_dist_matrix[:,col_partial-1] = 2
+                                    average_partial_dist_matrix[:,col_partial-2] = 2
+                                    average_partial_dist_matrix[:,col_partial-3] = 2
+                                    average_partial_dist_matrix[:,col_partial+1] = 2
+                                
+                                elif col_partial % 5 == 4: # top right selected
+                                    average_partial_dist_matrix[row_partial,:] = 2
+                                    average_partial_dist_matrix[:,col_partial] = 2
+
+                                    average_partial_dist_matrix[:,col_partial-1] = 2
+                                    average_partial_dist_matrix[:,col_partial-2] = 2
+                                    average_partial_dist_matrix[:,col_partial-3] = 2
+                                    average_partial_dist_matrix[:,col_partial-4] = 2
+
+
+                                
+                            else:
+                                if col_partial % 5 == 0: # top half selected
+                                    average_partial_dist_matrix[row_partial,:] = 2
+                                    average_partial_dist_matrix[:,col_partial] = 2
+
+                                    average_partial_dist_matrix[:,col_partial+1] = 2
+                                    average_partial_dist_matrix[:,col_partial+2] = 2
+                                    average_partial_dist_matrix[:,col_partial+3] = 2
+                                    average_partial_dist_matrix[:,col_partial+4] = 2
+
+                                
+                                elif col_partial % 5 == 1: # left half selected
+                                    average_partial_dist_matrix[row_partial,:] = 2
+                                    average_partial_dist_matrix[:,col_partial] = 2
+
+                                    average_partial_dist_matrix[:,col_partial-1] = 2
+                                    average_partial_dist_matrix[:,col_partial+1] = 2
+                                    average_partial_dist_matrix[:,col_partial+2] = 2
+                                    average_partial_dist_matrix[:,col_partial+3] = 2
+
+                                
+                                elif col_partial % 5 == 2: # right half selected
+                                    average_partial_dist_matrix[row_partial,:] = 2
+                                    average_partial_dist_matrix[:,col_partial] = 2
+
+                                    average_partial_dist_matrix[:,col_partial-1] = 2
+                                    average_partial_dist_matrix[:,col_partial-2] = 2
+                                    average_partial_dist_matrix[:,col_partial+1] = 2
+                                    average_partial_dist_matrix[:,col_partial+2] = 2
+                                
+                                elif col_partial % 5 == 3: # top left selected
+                                    average_partial_dist_matrix[row_partial,:] = 2
+                                    average_partial_dist_matrix[:,col_partial] = 2
+
+                                    average_partial_dist_matrix[:,col_partial-1] = 2
+                                    average_partial_dist_matrix[:,col_partial-2] = 2
+                                    average_partial_dist_matrix[:,col_partial-3] = 2
+                                    average_partial_dist_matrix[:,col_partial+1] = 2
+                                
+                                elif col_partial % 5 == 4: # top right selected
+                                    average_partial_dist_matrix[row_partial,:] = 2
+                                    average_partial_dist_matrix[:,col_partial] = 2
+
+                                    average_partial_dist_matrix[:,col_partial-1] = 2
+                                    average_partial_dist_matrix[:,col_partial-2] = 2
+                                    average_partial_dist_matrix[:,col_partial-3] = 2
+                                    average_partial_dist_matrix[:,col_partial-4] = 2
+                                idx -= 1
 
 
             # Directly match based on cosine similarity if not re-ranking
@@ -459,6 +641,131 @@ class Matcher():
                             average_dist_matrix[row][col] = -2
                             _ -= 1
 
+                # Check if there are any unmatched objects and try to match with partial objects
+                if any(x == -1 for x in id_list) :
+                    for idx in range(len(object_embeddings)):
+
+                        if id_list[idx] != -1 or info_list[idx][3] < 710:
+
+                            continue
+
+                        for i, matrix in enumerate(partial_dist_matrices):
+                            if i == 0:
+                                average_partial_dist_matrix = matrix
+                            else:
+                                average_partial_dist_matrix += matrix
+                        average_partial_dist_matrix /= len(partial_dist_matrices)
+
+                        max_dist_partial, row_partial, col_partial = self.get_max(average_partial_dist_matrix)
+                        if max_dist_partial == -2 or max_dist_partial > self.partial_threshold:
+                            break
+                        else:
+
+                            matched = 1
+
+                            if matched == 1 and self.partial_object_buffer[col_partial][2] not in selected_id:
+                                selected_id.append(self.partial_object_buffer[col_partial][2])
+                                id_list[row_partial//5] = self.partial_object_buffer[col_partial][2]
+                                
+                                # mark ID for other parts of the same objects
+                                if col_partial % 5 == 0: # top half selected
+                                    average_partial_dist_matrix[row_partial,:] = -2
+                                    average_partial_dist_matrix[:,col_partial] = -2
+
+                                    average_partial_dist_matrix[:,col_partial+1] = -2
+                                    average_partial_dist_matrix[:,col_partial+2] = -2
+                                    average_partial_dist_matrix[:,col_partial+3] = -2
+                                    average_partial_dist_matrix[:,col_partial+4] = -2
+
+                                
+                                elif col_partial % 5 == 1: # left half selected
+                                    average_partial_dist_matrix[row_partial,:] = -2
+                                    average_partial_dist_matrix[:,col_partial] = -2
+
+                                    average_partial_dist_matrix[:,col_partial-1] = -2
+                                    average_partial_dist_matrix[:,col_partial+1] = -2
+                                    average_partial_dist_matrix[:,col_partial+2] = -2
+                                    average_partial_dist_matrix[:,col_partial+3] = -2
+
+                                
+                                elif col_partial % 5 == 2: # right half selected
+                                    average_partial_dist_matrix[row_partial,:] = -2
+                                    average_partial_dist_matrix[:,col_partial] = -2
+
+                                    average_partial_dist_matrix[:,col_partial-1] = -2
+                                    average_partial_dist_matrix[:,col_partial-2] = -2
+                                    average_partial_dist_matrix[:,col_partial+1] = -2
+                                    average_partial_dist_matrix[:,col_partial+2] = -2
+                                
+                                elif col_partial % 5 == 3: # top left selected
+                                    average_partial_dist_matrix[row_partial,:] = -2
+                                    average_partial_dist_matrix[:,col_partial] = -2
+
+                                    average_partial_dist_matrix[:,col_partial-1] = -2
+                                    average_partial_dist_matrix[:,col_partial-2] = -2
+                                    average_partial_dist_matrix[:,col_partial-3] = -2
+                                    average_partial_dist_matrix[:,col_partial+1] = -2
+                                
+                                elif col_partial % 5 == 4: # top right selected
+                                    average_partial_dist_matrix[row_partial,:] = -2
+                                    average_partial_dist_matrix[:,col_partial] = -2
+
+                                    average_partial_dist_matrix[:,col_partial-1] = -2
+                                    average_partial_dist_matrix[:,col_partial-2] = -2
+                                    average_partial_dist_matrix[:,col_partial-3] = -2
+                                    average_partial_dist_matrix[:,col_partial-4] = -2
+
+
+                                
+                            else:
+                                if col_partial % 5 == 0: # top half selected
+                                    average_partial_dist_matrix[row_partial,:] = -2
+                                    average_partial_dist_matrix[:,col_partial] = -2
+
+                                    average_partial_dist_matrix[:,col_partial+1] = -2
+                                    average_partial_dist_matrix[:,col_partial+2] = -2
+                                    average_partial_dist_matrix[:,col_partial+3] = -2
+                                    average_partial_dist_matrix[:,col_partial+4] = -2
+
+                                
+                                elif col_partial % 5 == 1: # left half selected
+                                    average_partial_dist_matrix[row_partial,:] = -2
+                                    average_partial_dist_matrix[:,col_partial] = -2
+
+                                    average_partial_dist_matrix[:,col_partial-1] = -2
+                                    average_partial_dist_matrix[:,col_partial+1] = -2
+                                    average_partial_dist_matrix[:,col_partial+2] = -2
+                                    average_partial_dist_matrix[:,col_partial+3] = -2
+
+                                
+                                elif col_partial % 5 == 2: # right half selected
+                                    average_partial_dist_matrix[row_partial,:] = -2
+                                    average_partial_dist_matrix[:,col_partial] = -2
+
+                                    average_partial_dist_matrix[:,col_partial-1] = -2
+                                    average_partial_dist_matrix[:,col_partial-2] = -2
+                                    average_partial_dist_matrix[:,col_partial+1] = -2
+                                    average_partial_dist_matrix[:,col_partial+2] = -2
+                                
+                                elif col_partial % 5 == 3: # top left selected
+                                    average_partial_dist_matrix[row_partial,:] = -2
+                                    average_partial_dist_matrix[:,col_partial] = -2
+
+                                    average_partial_dist_matrix[:,col_partial-1] = -2
+                                    average_partial_dist_matrix[:,col_partial-2] = -2
+                                    average_partial_dist_matrix[:,col_partial-3] = -2
+                                    average_partial_dist_matrix[:,col_partial+1] = -2
+                                
+                                elif col_partial % 5 == 4: # top right selected
+                                    average_partial_dist_matrix[row_partial,:] = -2
+                                    average_partial_dist_matrix[:,col_partial] = -2
+
+                                    average_partial_dist_matrix[:,col_partial-1] = -2
+                                    average_partial_dist_matrix[:,col_partial-2] = -2
+                                    average_partial_dist_matrix[:,col_partial-3] = -2
+                                    average_partial_dist_matrix[:,col_partial-4] = -2
+                                idx -= 1
+
 
         # Assigning new IDs to unmatched objects
         for i in range(len(object_embeddings)):
@@ -467,17 +774,21 @@ class Matcher():
         
         # Add current objects into the object buffer
         for i in range(len(object_embeddings)):
-            if id_list[i] == -1:
-                id_list[i] = self.id
-                self.id += 1
-
             object_info = [object_embeddings[i], info_list[i], id_list[i], motion_tracklet[i]]
             self.object_buffer.append(object_info)
+
+        for i in range(len(object_embeddings)*5):
+            partial_object_info = [object_embeddings[i//5].cpu().numpy(), info_list[i//5], id_list[i//5], motion_tracklet[i//5]]
+            self.partial_object_buffer.append(object_info)
 
         # Remove old objects from the object buffer if buffer size exceeds the limit
         if len(self.object_in_frame) > self.buffer_size:
             for i in range(self.object_in_frame[0]):
                 self.object_buffer.pop(0)
             self.object_in_frame.pop(0)
+        if len(self.partial_object_in_frame) > self.buffer_size:
+            for i in range(self.partial_object_in_frame[0]):
+                self.partial_object_buffer.pop(0)
+            self.partial_object_in_frame.pop(0)
 
         return id_list

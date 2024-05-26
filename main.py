@@ -79,7 +79,10 @@ if __name__ == '__main__':
     transform = transforms.Compose([
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
-    
+    partial_object_transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transform
+    ])
     
     
     
@@ -138,13 +141,33 @@ if __name__ == '__main__':
                 _, feature, _ = extracter(torch.unsqueeze(img,0).to(device))
                 object_embeddings = torch.cat((object_embeddings, feature), dim=0)
 
+                half_x = current_objects[j].shape[2] // 2
+                half_y = current_objects[j].shape[1] // 2
+
+                top_half = partial_object_transform(current_objects[j][:, :half_y, :])
+
+                left_half =  partial_object_transform(current_objects[j][:, :, :half_x])
+                right_half = partial_object_transform(current_objects[j][:, :, half_x:])
+
+                top_left = partial_object_transform(current_objects[j][:, :half_y, :half_x])
+                top_right = partial_object_transform(current_objects[j][:, :half_y, half_x:])
+
+                _, top_feature, _ = extracter(torch.unsqueeze(transform(top_half),0).to(device))
+                _, left_feature, _ = extracter(torch.unsqueeze(transform(left_half),0).to(device))
+                _, right_feature, _ = extracter(torch.unsqueeze(transform(right_half),0).to(device))
+                _, top_left_feature, _ = extracter(torch.unsqueeze(transform(top_left),0).to(device))
+                _, top_right_feature, _ = extracter(torch.unsqueeze(transform(top_right),0).to(device))
+
             #embedding normalization
             if object_embeddings.numel() != 0:
                 embedding_norm = torch.linalg.norm(object_embeddings, dim=1, keepdims=True)
                 object_embeddings = object_embeddings / embedding_norm
 
+                partial_embedding_norm = torch.linalg.norm(partial_embeddings, dim=1, keepdims=True)
+                partial_embeddings = partial_embeddings / partial_embedding_norm
+
             # Match object embeddings to previous frames
-            id_list, output_dist_mat =  matcher.match(object_embeddings, info_list, args.re_rank)
+            id_list, output_dist_mat, ouput_partial_dist_mat =  matcher.match(object_embeddings, info_list, args.re_rank)
 
 
             # Record coordinates and IDs to the output file
@@ -155,27 +178,5 @@ if __name__ == '__main__':
                     save_folder = os.path.join(args.out, args.model, str(args.cam))
                     os.makedirs(save_folder, exist_ok=True)
                     torch.save(output_dist_mat, os.path.join(os.path.join(args.out, args.model, str(args.cam)),f'{frame_id}.pt'))
-                    
-                    with open(os.path.join(save_folder,f'{frame_id}_info.json'), 'w+') as f:
-                        json.dump(info_list, f)
-                    with open(os.path.join(save_folder,f'{frame_id}_info_norm.json'), 'w+') as f:
-                        json.dump(info_list_norm, f)
-
-                    np.save(os.path.join(save_folder,f'{frame_id}_embeddings'), object_embeddings.cpu().numpy())
-
-            frame_id += 1
-
-            # Draw bounding boxes if visualization is enabled
-            if args.visualize:
-                image = cv2.imread(imgs[i])
-                for n in range(len(info_list)):
-                    color = palette.get_color(id_list[n])
-                    cv2.rectangle(image, (info_list[n][0], info_list[n][1]), (info_list[n][2], info_list[n][3]), color, 2)
-                    cv2.putText(image, text=str(id_list[n]), org=(info_list[n][0], info_list[n][1] - 5), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=2, color=color, thickness=3)
-
-
-                video_out.write(image)
-
-    # Release video writer if visualization is enabled
-    if args.visualize:
-        video_out.release()
+                    torch.save(ouput_partial_dist_mat, os.path.join(os.path.join(args.out, args.model, str(args.cam)),f'{frame_id}_partial.pt'))
+                    torch.save(object_embeddi

@@ -123,7 +123,7 @@ if __name__ == '__main__':
                 info_list_norm = json.load(f)
 
             #load embeddings for this frame
-            object_embeddings = np.load(os.path.join(args.dist_dir,f"{args.out.split('/')[-1]}",models_files_folder[0],str(args.cam),f'{frame_id}_embeddings.npy'))
+            object_embeddings = torch.load(os.path.join(args.dist_dir,f"{args.out.split('/')[-1]}",models_files_folder[0],str(args.cam),f'{frame_id}_embeddings.pt'))
 
 
             # Open a text file to record the label of each frame
@@ -136,14 +136,17 @@ if __name__ == '__main__':
 
             #load distance matrices from all models
             model_dist_mats = []
+            model_partial_dist_mats = []
             for model in models_files_folder:
-                matrix = torch.load(os.path.join(args.dist_dir,f"{args.out.split('/')[-1]}",model,str(args.cam), f'{frame_id}.pt'))
+                matrix = torch.load(os.path.join(args.dist_dir,f"{args.out.split('/')[-1]}",model,str(args.cam), f'{frame_id}_whole.pt'))
                 model_dist_mats.append(matrix)
 
+                partial_matrix = torch.load(os.path.join(args.dist_dir,f"{args.out.split('/')[-1]}",model,str(args.cam), f'{frame_id}_partial.pt'))
+                model_partial_dist_mats.append(partial_matrix)
 
 
             # Match object embeddings to previous frames
-            id_list=  matcher.get_ensemble_id_list(np.array(object_embeddings), info_list, model_dist_mats, args.re_rank)
+            id_list=  matcher.get_ensemble_id_list(object_embeddings, info_list, model_dist_mats, model_partial_dist_mats, args.re_rank)
 
             # Record coordinates and IDs to the output file
             for n in range(len(info_list)):
