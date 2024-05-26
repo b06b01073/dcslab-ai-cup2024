@@ -7,13 +7,21 @@ import py_motmetrics.motmetrics as mm
 
 from loguru import logger
 
-def evaluate(gt_dir, ts_dir, mode, cam):
+def evaluate(gt_dir, ts_dir, mode, cam, ensemble, model):
     metrics = list(mm.metrics.motchallenge_metrics)
     mh = mm.metrics.create()
 
     if mode == 'multi_cam':
         accs = []
         names = []
+
+        folder_name = ts_dir.split('/')[-1]
+        save_dir = os.path.join('final_result_score')
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir, exist_ok=True)
+        print(f'save_dir : {save_dir}')
+        print(f'folder_name : {folder_name}')
+        f = open(f'{save_dir}/{folder_name}.txt', 'w')
 
         gt_files = sorted(os.listdir(gt_dir))
         ts_files = sorted(os.listdir(ts_dir))
@@ -31,20 +39,32 @@ def evaluate(gt_dir, ts_dir, mode, cam):
 
         summary = mh.compute_many(accs, metrics=metrics, generate_overall=True)
         print("Score for total file: IDF1 ", summary.idf1.OVERALL, " + MOTA ", summary.mota.OVERALL, " = ", summary.idf1.OVERALL+summary.mota.OVERALL)
+        f.write(f"Score for total file: IDF1  {summary.idf1.OVERALL} + MOTA {summary.mota.OVERALL}  = {summary.idf1.OVERALL+summary.mota.OVERALL}")
+        f.close()
         # 完整的 motmetrics 各項評分成果 V
         logger.info(f'\n{mm.io.render_summary(summary, formatters=mh.formatters, namemap=mm.io.motchallenge_metric_names)}')
 
     elif mode == 'single_cam':
         gt_files = sorted(os.listdir(gt_dir))
-        ts_files = sorted(os.listdir(ts_dir))
 
-        folder_name = ts_dir.split('/')[2]
+        folder_name = ts_dir.split('/')[-1]
 
-        if not os.path.exists('ts_result/'):
-            os.mkdir('ts_result/')
-        if not os.path.exists(f'ts_result/{folder_name}/'):
-             os.mkdir(f'ts_result/{folder_name}/')
-        f = open(f'ts_result/{folder_name}/{cam}.txt', 'w')
+        if ensemble:
+            ts_files = sorted(os.listdir(ts_dir))
+        else:
+            ts_dir = os.path.join(ts_dir, model)
+            ts_files = sorted(os.listdir(ts_dir))
+            ts_files = sorted(os.listdir(ts_dir))
+        
+
+        if ensemble:
+            save_dir = os.path.join('ts_result_ensemble', folder_name)
+            os.makedirs(save_dir, exist_ok=True)
+            f = open(f'{save_dir}/{cam}.txt', 'w')
+        else:
+            save_dir = os.path.join('ts_result', folder_name, model)
+            os.makedirs(save_dir, exist_ok=True)
+            f = open(f'{save_dir}/{cam}.txt', 'w')
 
 
         gt_path = ''
@@ -90,6 +110,8 @@ if __name__ == "__main__":
     parser.add_argument('--ts_dir', type=str, help='Path to the tracking result directory')
     parser.add_argument('--mode', type=str, choices=['multi_cam', 'single_cam'], default='multi_cam', help='Evaluation mode')
     parser.add_argument('--cam', type=int)
+    parser.add_argument('--ensemble', default=False, type=bool, help='Specify whether it is in ensemble mode')
+    parser.add_argument('--model', '-m', type=str, default='resnet101_ibn_a', help='the name of the pre-trained PyTorch model')
     args = parser.parse_args()
 
-    evaluate(args.gt_dir, args.ts_dir, args.mode, args.cam)
+    evaluate(args.gt_dir, args.ts_dir, args.mode, args.cam, args.ensemble, args.model)

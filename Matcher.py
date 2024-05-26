@@ -3,7 +3,7 @@ import numpy as np
 ERROR = 10
 class Matcher():
 
-    def __init__(self, threshold, buffer_size, lambda_value):
+    def __init__(self, threshold=0.5, buffer_size=1, lambda_value=0.8):
 
         """
         Initialize the Matcher class with threshold, buffer size, and lambda value.
@@ -21,17 +21,45 @@ class Matcher():
         self.id = 0 # Current ID for assigning to new objects
         self.lambda_value = lambda_value
     
+    def multi_match(self, dist_matrix, matched_set, current_set):
+        matched_list = []
+        new_set = current_set.copy()
+        if dist_matrix.numel() != 0:
+            for _ in range(len(dist_matrix)):
+                max_dist, row, col = self.get_max(dist_matrix)
+                if max_dist == -2 or max_dist < self.threshold:
+                    break
+                else:
+                    key_1_list = list(matched_set.keys())
+                    key_2_list = list(current_set.keys())
+
+
+                    if key_1_list[row] not in matched_list:
+                        matched_list.append(key_1_list[row])
+                    else:
+                        print(f'id {key_1_list[row]} is already matched.')
+
+                    new_set[key_1_list[row]] = new_set.pop(key_2_list[col])
+                    dist_matrix[row,:] = -2
+                    dist_matrix[:,col] = -2
+
+
+        return new_set, matched_list
+
+
+        
     def match(self, obeject_embeddings, info_list, rerank=True):
         """
         Match current objects to existing objects in the object buffer or assign new IDs.
 
         Args:
-        - object_embeddings (list): List of embeddings for the current objects
+        - object_embeddings (tensor): List of embeddings for the current objects
         - info_list (list): List of information about the current objects
         - rerank (bool): Flag to specify whether to perform re-ranking
 
         Returns:
         - id_list (list): List of IDs assigned to the current objects
+        - output_dist_mat (tensor): Distance matrix used for matching
         """
         
         id_list = [-1] * len(obeject_embeddings)
@@ -43,17 +71,18 @@ class Matcher():
         self.object_in_frame.append(len(obeject_embeddings))
 
         # Matching objects to existing objects in the object buffer
-        if self.object_buffer and obeject_embeddings.size != 0:
+        if self.object_buffer and obeject_embeddings.numel() != 0:
             
             gallery_embedding = self.get_gallery_embedding()
             
-            q_g_dist = self.dot(obeject_embeddings, gallery_embedding)
-            q_q_dist = self.dot(obeject_embeddings, obeject_embeddings)
-            g_g_dist = self.dot(gallery_embedding, gallery_embedding)
             
 
             # Re-ranking the distance matrix if specified
             if rerank:
+                q_g_dist = self.dot(obeject_embeddings, gallery_embedding)
+                q_q_dist = self.dot(obeject_embeddings, obeject_embeddings)
+                g_g_dist = self.dot(gallery_embedding, gallery_embedding)
+                
                 dist_matrix = self.re_ranking(q_q_dist, q_g_dist, g_g_dist, self.lambda_value)
                 output_dist_mat = self.re_ranking(q_q_dist, q_g_dist, g_g_dist, self.lambda_value)
 
@@ -77,8 +106,8 @@ class Matcher():
 
             # Directly match based on cosine similarity if not re-ranking
             else:
-                dist_matrix = self.compute_distmatrix(torch.from_numpy(obeject_embeddings))
-                output_dist_mat = self.compute_distmatrix(torch.from_numpy(obeject_embeddings))
+                dist_matrix = self.compute_distmatrix(obeject_embeddings)
+                output_dist_mat = dist_matrix.clone().detach()
 
                 selected_id = []
                 for _ in range(len(obeject_embeddings)):
@@ -107,7 +136,7 @@ class Matcher():
             if id_list[i] == -1:
                 id_list[i] = self.id
                 self.id += 1
-            object_info = [obeject_embeddings[i], info_list[i], id_list[i], motion_tracklet[i]]
+            object_info = [obeject_embeddings[i].cpu().numpy(), info_list[i], id_list[i], motion_tracklet[i]]
             self.object_buffer.append(object_info)
 
         # Remove old objects from the object buffer if buffer size exceeds the limit
@@ -296,7 +325,7 @@ class Matcher():
         Compute the cosine similarity distance matrix between current and existing object embeddings.
 
         Args:
-        - object_embeddings (list): Embeddings for current objects
+        - object_embeddings (tensor): Embeddings for current objects
 
         Returns:
         - dist_matrix (tensor): Distance matrix between current and existing objects
@@ -306,8 +335,9 @@ class Matcher():
         x_len= len(object_embeddings)
         dist_matrix = torch.empty((x_len, y_len))
         for i in range(x_len):
-            for j in range(y_len):    
-                dist_matrix[i][j] = torch.nn.functional.cosine_similarity(object_embeddings[i], torch.from_numpy(self.object_buffer[j][0]), dim=0)
+            for j in range(y_len):
+                device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+                dist_matrix[i][j] = torch.nn.functional.cosine_similarity(object_embeddings[i], torch.from_numpy(self.object_buffer[j][0]).to(device), dim=0)
         return dist_matrix
     
     def get_id(self, obeject_embeddings):

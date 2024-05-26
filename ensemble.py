@@ -37,12 +37,13 @@ if __name__ == '__main__':
     parser.add_argument('--out', type=str, help='Directory to save the output video.')
     parser.add_argument('--width', '-w', type=int, default=224)
     parser.add_argument('--buffer_size', type=int, default=1, help='size limit of the object buffer.')
-    parser.add_argument('--visualize', '-v', type=str, default=False, help='Set to "True" to enable visualization of tracking results.')
+    parser.add_argument('--visualize', '-v', action='store_true', help='Set to "True" to enable visualization of tracking results.')
     parser.add_argument('--threshold', type=float, default=0.5, help='Set the threshold for tracking objects.')
     parser.add_argument('--lambda_value', type=float, default=0.8, help='Set the lambda value for re-ranking.')
     parser.add_argument('--cam', default=0, type=int, help='Specify the CAM number to process.')
     parser.add_argument('--finetune', default=False, type=bool, help='Specify whether in finetune mode')
     parser.add_argument('--re_rank', type=bool, default=False)
+    parser.add_argument('--min_size', default=0, type=float, help='Minimum size of the object to be cropped')
     args = parser.parse_args()
 
 
@@ -103,7 +104,7 @@ if __name__ == '__main__':
         video_out = cv2.VideoWriter(save_path, fourcc, 2, (1280,  720)) 
 
     # Initialize Cropper and Matcher
-    cropper = Cropper(args.width)
+    cropper = Cropper(args.width, args.cam, args.min_size)
 
     #basic threshold = 0.5
     matcher = Matcher(threshold=args.threshold, buffer_size=args.buffer_size, lambda_value=args.lambda_value)
