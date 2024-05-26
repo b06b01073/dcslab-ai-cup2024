@@ -34,3 +34,6 @@ final_result_min
 final_result_ave
 final_result_ave_2
 final_result
+final_result_score
+test_final_result
+test_multi_match_final_version.py

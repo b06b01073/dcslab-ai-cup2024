@@ -18,6 +18,7 @@ if __name__ == '__main__':
     parser.add_argument('--end', type=int)
     parser.add_argument('--step', type=int)
     parser.add_argument('--cam', type=str)
+    parser.add_argument('--time', type=str)
     args = parser.parse_args()
 
 
@@ -26,7 +27,12 @@ if __name__ == '__main__':
     else:
         save_path = os.path.join(args.result_dir, args.cam, args.model)
     os.makedirs(save_path, exist_ok=True)
-    f = open(f'{save_path}/{args.parameter}.txt', 'w')
+    if args.time == 'm':
+        f = open(f'{save_path}/{args.parameter}.txt', 'w')
+        date_list = ['0902_150000_151900', '0903_150000_151900', '0924_150000_151900', '0925_150000_151900','1015_150000_151900']
+    else:
+        f = open(f'{save_path}/night_{args.parameter}.txt', 'w')
+        date_list = ['0902_190000_191900', '0903_190000_191900', '0924_190000_191900', '0925_190000_191900','1015_190000_191900']
 
     max_total = -100
     max_idf1 = -100
@@ -72,7 +78,10 @@ if __name__ == '__main__':
     plt.plot(x, y)
     plt.ylabel('Total score')
     plt.xlabel(f'{args.parameter} size')
-    plt.savefig(f'{save_path}/{args.parameter}.jpg')
+    if args.time =='m':
+        plt.savefig(f'{save_path}/{args.parameter}.jpg')
+    else:
+        plt.savefig(f'{save_path}/night_{args.parameter}.jpg')
     plt.close()
 
 

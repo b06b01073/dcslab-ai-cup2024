@@ -14,7 +14,7 @@ visualize=False
 time=m
 
 
-while getopts “p:s:e:t:v:d:?” argv
+while getopts “p:s:e:t:d:?” argv
 do
      case $argv in
          p)
@@ -28,10 +28,7 @@ do
              ;;
          t)
             step=$OPTARG
-            ;;
-         v)
-            visualize=$OPTARG
-            ;;   
+            ;;  
          d)
             time=$OPTARG
             ;;
@@ -67,8 +64,8 @@ do
                 fi
 
                 # Start tracking the cars on the monitor.
-                echo python main.py -f ../../IMAGE/$date -l ../../LABEL/"$Label_from""$date" --$param $i --out aicup_ts/labels/"${date}_${param}_${i}" --visualize $visualize --cam $cam --finetune True --model $model
-                python main.py -f ../../IMAGE/$date -l ../../LABEL/"$Label_from""$date" --$param $i --out aicup_ts/labels/"${date}_${param}_${i}" --visualize $visualize --cam $cam --finetune True --model $model
+                echo python main.py -f ../../IMAGE/$date -l ../../LABEL/"$Label_from""$date" --$param $i --out aicup_ts/labels/"${date}_${param}_${i}" --cam $cam --finetune True --model $model
+                python main.py -f ../../IMAGE/$date -l ../../LABEL/"$Label_from""$date" --$param $i --out aicup_ts/labels/"${date}_${param}_${i}" --cam $cam --finetune True --model $model
 
                 # Confirm whether the ground truth file exists.
                 if ! [ -d MOT15/aicup_gt/$date ]

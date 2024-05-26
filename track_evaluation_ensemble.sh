@@ -13,7 +13,7 @@ visualize=False
 
 
 
-while getopts “p:s:e:t:v:d:?” argv
+while getopts “p:s:e:t:d:?” argv
 do
      case $argv in
          p)
@@ -27,10 +27,7 @@ do
              ;;
          t)
             step=$OPTARG
-            ;;
-         v)
-            visualize=$OPTARG
-            ;;   
+            ;;  
          d)
             time=$OPTARG
             ;;
@@ -65,12 +62,12 @@ do
             for model in "${model_list[@]}";
             do
                 # Start tracking the cars on the monitor.
-                echo python main.py -f ../../IMAGE/$date -l ../../LABEL/"$Label_from""$date" --$param $i --out dist_matrix/"${date}_${param}_${i}" --visualize $visualize --cam $cam --finetune True --model $model --output_ensemble True
-                python main.py -f ../../IMAGE/"${date}" -l ../../LABEL/"$Label_from""$date" --$param $i --out dist_matrix/"${date}_${param}_${i}" --visualize $visualize --cam $cam --finetune True --model $model --output_ensemble True
+                echo python main.py -f ../../IMAGE/$date -l ../../LABEL/"$Label_from""$date" --$param $i --out dist_matrix/"${date}_${param}_${i}" --cam $cam --finetune True --model $model --output_ensemble True
+                python main.py -f ../../IMAGE/"${date}" -l ../../LABEL/"$Label_from""$date" --$param $i --out dist_matrix/"${date}_${param}_${i}" --cam $cam --finetune True --model $model --output_ensemble True
             done
 
-            echo python ensemble.py -f ../../IMAGE/$date -l ../../LABEL/"$Label_from""$date" --$param $i --out aicup_ts_ensemble/labels/"${date}_${param}_${i}" --visualize $visualize --cam $cam --dist_dir dist_matrix --finetune True
-            python ensemble.py -f ../../IMAGE/$date -l ../../LABEL/"$Label_from""$date" --$param $i --out aicup_ts_ensemble/labels/"${date}_${param}_${i}" --visualize $visualize --cam $cam --dist_dir dist_matrix --finetune True
+            echo python ensemble.py -f ../../IMAGE/$date -l ../../LABEL/"$Label_from""$date" --$param $i --out aicup_ts_ensemble/labels/"${date}_${param}_${i}" --cam $cam --dist_dir dist_matrix --finetune True
+            python ensemble.py -f ../../IMAGE/$date -l ../../LABEL/"$Label_from""$date" --$param $i --out aicup_ts_ensemble/labels/"${date}_${param}_${i}" --cam $cam --dist_dir dist_matrix --finetune True
             
             # Confirm whether the ground truth file exists.
             if ! [ -d MOT15/aicup_gt/$date ]
