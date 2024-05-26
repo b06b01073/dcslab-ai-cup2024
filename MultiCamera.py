@@ -90,6 +90,15 @@ class CNN(nn.Module):
         return output
     
 def multiCam(camera_num):
+    '''
+    This function can choose the cars that will cross camera.
+
+    Args:
+    - camera_num: The camera number you want to filter.
+
+    Returen:
+    -carToNext: The dictionary that can find the car that may exist in the next camera.
+    '''
     carToNext = {}
     count = 0
     for i in range(0, 8):
@@ -115,6 +124,7 @@ def ImgandLabel(j, k):
     image_path = "./test_set/IMAGE/1016_150000_151900/" + str(j) + tag + str(k) + ".jpg"
     label_path = "./test_set/LABEL/1016_150000_151900/" + str(j) + tag + str(k) + ".txt"
     return image_path, label_path
+
 def GetBBofEachFrame(Forward, camera, img, info_list, info_list_norm, j, k, carToNext, previousDirection, previousReject, previousX, previousY):
         
     count = 0
@@ -168,7 +178,7 @@ def Backward(j, carToNext):
     for k in range(360, 0, -1):
         image_path, label_path = ImgandLabel(j , k)
         Crop = Cropper(224)
-        img, info_list, info_list_norm = Crop.crop_frame2(image_path, label_path)
+        img, info_list, info_list_norm = Crop.crop_frame(image_path, label_path, True)
         camera = j
         GetBBofEachFrame(False, camera, img, info_list, info_list_norm, j, k, tmpDict, previousDirection, previousReject, previousX, previousY)
     for key in tmpDict.keys():
@@ -184,7 +194,7 @@ def Forward(j, carToNext):
     for k in range(1, 361):
         image_path, label_path = ImgandLabel(j , k)
         Crop = Cropper(224)
-        img, info_list, info_list_norm = Crop.crop_frame2(image_path, label_path)
+        img, info_list, info_list_norm = Crop.crop_frame(image_path, label_path, True)
         camera = j
         GetBBofEachFrame(True, camera, img, info_list, info_list_norm, j, k, carToNext, previousDirection, previousReject, previousX, previousY)
         
@@ -197,10 +207,10 @@ def direction_check(previous, current, rej, preX, preY, cuX, cuY):
     right_down = 5
     left_up = 6
     left_down = 7
-    # if preX == cuX and preY == cuY:
-    #     return False
-    # if rej == current:
-    #     return True
+    if preX == cuX and preY == cuY:
+        return False
+    if rej == current:
+        return True
     # if previous == down:
     #     if current == left_down or current == right_down:
     #         return True
@@ -312,7 +322,7 @@ def toCamera(Forward, current_camera, direction):
     return current_camera-1        
         
 
-multiCam(-1)
+# multiCam(-1)
 # img = Image.open("./4/4431-2-148.jpg")
 # w, h = img.size
 # direction = directionClassification(img, w, h)

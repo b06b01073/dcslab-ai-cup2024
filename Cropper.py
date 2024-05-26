@@ -2,7 +2,7 @@ import torch
 import torchvision.transforms.functional as F
 from torchvision import transforms
 from torchvision.io import read_image
-
+from shapely.geometry import Polygon
 class Cropper():
 
     def __init__(self, img_width, cam, min_size):
@@ -108,28 +108,7 @@ class Cropper():
         else:
             return x_center_norm, y_center_norm, w_norm, h_norm
     
-    def get_image_info2(self, info):
-
-        """
-        Extract bounding box information from label file.
-
-        Args:
-        - info (list): List containing bounding box information.
-
-        Returns:
-        - x_center_norm (float): Normalized x-coordinate of the bounding box center.
-        - y_center_norm (float): Normalized y-coordinate of the bounding box center.
-        - w_norm (float): Normalized width of the bounding box.
-        - h_norm (float): Normalized height of the bounding box.
-        """
-
-        x_center_norm = float(info[1])
-        y_center_norm = float(info[2])
-        w_norm = float(info[3])
-        h_norm = float(info[4])
-        car_id = int(info[5])
-        
-        return x_center_norm, y_center_norm, w_norm, h_norm, car_id
+    
     def inZone(self,left,top,w,h):
         cam0 = [[(0,0), (0,128), (98,186), (348,118), (430,115),(668,0)], [(747,0), (690,145), (730,148), (760,0)], [(816,0), (1083,195), (1280,234),(1280,0)]]
         cam1 = [[(0,0), (0,137), (1024,276), (1280,248)], [(0,172), (0,219), (719,396), (824,358)]]

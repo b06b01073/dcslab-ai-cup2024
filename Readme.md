@@ -5,7 +5,6 @@
 Read this [page](https://hackmd.io/@2aRuhhznQfOr_IvFkBUYKQ/SJ0KESMzR) first before you start working on this project.
 
 ## 簡介
-出於意外把所有東西都推上來了
 主要有三個檔案 Multicamera.py, directiionmodel.py, cropper.py
 本repo主要使用於車子方向的判別與過濾每一台camera需要比對的embedding
 
