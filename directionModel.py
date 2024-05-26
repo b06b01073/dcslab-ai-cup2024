@@ -1,4 +1,4 @@
-import torch
+import torch as torch
 import torch.nn as nn
 import torchvision
 import matplotlib.pyplot as plt
@@ -8,6 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 import os
 import random
+
 
 DOANLOAD_DATASET = True
 LR = 0.001
@@ -71,18 +72,47 @@ class CNN(nn.Module):
             nn.ReLU(True)
         )
         # in[N, 64] => out[N, 10]
-        self.out = nn.Linear(64, self.num_classes)
+        self.out = nn.Linear(65, self.num_classes)
 
-    def forward(self, x):
+    # def forward(self, x):
+    #     x = self.conv1(x)
+    #     x = self.conv2(x)
+    #     x = x.view(x.size(0), -1) # [N, 32 * 8 * 8]
+    #     x = self.fc1(x)
+    #     x = self.fc2(x)
+    #     x = self.fc3(x)
+    #     output = self.out(x)
+    #     return output
+    # def forward(self, x, w, h):
+    #     x = self.conv1(x)
+    #     x = self.conv2(x)
+    #     x = x.view(x.size(0), -1) # [N, 32 * 8 * 8]
+    #     x = self.fc1(x)
+    #     x = self.fc2(x)
+    #     x = self.fc3(x)
+    #     w = torch.unsqueeze(torch.tensor(w.to(device)),0)
+    #     h = torch.unsqueeze(torch.tensor(h.to(device)),0)
+    #     #print(x.shape, w.shape, h.shape)
+    #     x = torch.cat((x,w),dim=1)
+    #     x = torch.cat((x,h),dim=1)
+    #     #print(x.shape)
+    #     output = self.out(x)
+    #     return output
+    def forward(self, x, w, h):
         x = self.conv1(x)
         x = self.conv2(x)
         x = x.view(x.size(0), -1) # [N, 32 * 8 * 8]
         x = self.fc1(x)
         x = self.fc2(x)
         x = self.fc3(x)
+        handw = h/w
+        #print(handw)
+        handw = torch.unsqueeze(torch.tensor(handw),1)
+        #print(x.shape, w.shape, h.shape)
+        x = torch.cat((x,handw),dim=1)
+        #print(x.shape)
         output = self.out(x)
         return output
-    
 def model_train():
     class dataSets(Dataset):
         def __init__(self, transform=None):
@@ -293,16 +323,18 @@ def model_train():
     print(prediction)
     print(test_y)
 
-def directionClassification(img): 
+def directionClassification(img, w, h): 
     #print(type(img))
     
     img = torchvision.transforms.ToPILImage()(img)
     
     #print(type(img))
     cnn = CNN(len(classes))
-    cnn = torch.load("./models/cnn_model_91_1.pt")
+    cnn = torch.load("./models/cnn_model_93_1_65.pt")
     cnn = cnn.to(device)
+    
     cnn.eval()
-   #print(img.shape)
-    prediction = torch.argmax(cnn(test_transform(img).unsqueeze(dim=0).to(device)), 1)
+    #print(img.shape)
+    #print(nn.Softmax()(cnn(test_transform(img).unsqueeze(dim=0).to(device), w, h)))
+    prediction = torch.argmax(cnn(test_transform(img).unsqueeze(dim=0).to(device), w, h), 1)
     return prediction
