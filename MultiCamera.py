@@ -18,18 +18,19 @@ def multiCam(camera_num, img_path, label_path):
 
     Args:
     - camera_num: The camera number you want to filter.
+    - img_path: The path of folder that contain frames.
+    - label_path: The path of folder that contain labels.
+    
 
     Returen:
-    -carToNext: The dictionary that can find the car that may exist in the next camera.
+    - listTo: A list contains the car_id which corresponding car will go N to N+1
+    - listBack: A list contains the car_id which corresponding car will go N+1 to N
     '''
     carToNext = {}
     count = 0
     net = torch.hub.load('k28998989/MCmodel','cnn')
     net.to(device)
     net.eval()
-    for i in range(0, 8):
-        if not os.path.exists(str(i)):
-            os.mkdir(str(i))
     if camera_num == -1:
         for j in range(0, 8):
             count = 0
@@ -71,14 +72,12 @@ def GetBBofEachFrame(Forward, camera, img, info_list, info_list_norm, j, k, carT
                 print(car_id, carToNext[car_id], j, k)
             
         direction = directionClassification(net, img[i], w, h)
-        # if(car_id == 4474 or car_id == 4486 or car_id == 4476):
-        #     torchvision.utils.save_image(img[i], str(direction[0].item()) + "/" + str(car_id)+ "-"+str(j)+"-"+str(k)+'.jpg') 
+        
         check=True
         
         if car_id in previousDirection:
             check = direction_check(previousDirection[car_id], direction, previousReject[car_id], previousX[car_id], previousY[car_id], int(100*x), int(100*y))
-        # if car_id == 4441:
-        #     print(check)
+        
         if check == True:
             next_camera = toCamera(Forward, camera, direction[0].item())
             carToNext[car_id] = next_camera
@@ -89,15 +88,10 @@ def GetBBofEachFrame(Forward, camera, img, info_list, info_list_norm, j, k, carT
         previousX[car_id] = int(x*100)
         previousY[car_id] = int(y*100)   
         
-        #print(j, k, car_id, direction[0].item(), next_camera)
         previousDirection[car_id] = direction[0].item()
         if car_id not in previousReject:
             previousReject[car_id] = -1
             
-
-        # if(car_id ==4474 or car_id == 4476 or car_id == 4486):
-        #     print(car_id, direction, carToNext[car_id], k)
-           # print(previousReject[car_id], previousDirection[car_id])
        
 def Backward(net, j, carToNext, img_path, label_path):
     print("------camera_"+str(j)+"_Backwarding------")
@@ -260,23 +254,9 @@ def toCamera(Forward, current_camera, direction):
     return current_camera-1        
         
 def directionClassification(net, img, w, h): 
-    #print(type(img))
-    
+        
     img = torchvision.transforms.ToPILImage()(img)
-    
-    #print(type(img))
-    # cnn = CNN(8)
-    # cnn = torch.load("./models/cnn_model_93_1_65.pt")
-    # cnn = cnn.to(device)
-    
-    
-    #print(img.shape)
-    #print(nn.Softmax()(cnn(test_transform(img).unsqueeze(dim=0).to(device), w, h)))
+   
     prediction = torch.argmax(net(test_transform(img).unsqueeze(dim=0).to(device), w, h), 1)
+    
     return prediction
-listTo, listBack = multiCam(0, "./test_set/IMAGE/1016_150000_151900/", "./test_set/LABEL/1016_150000_151900/")
-print(listTo)
-print(listBack)
-# img = Image.open("./4/4431-2-148.jpg")
-# w, h = img.size
-# direction = directionClassification(img, w, h)
