@@ -199,52 +199,23 @@ eu_embedding, cos_embedding, _ = net(processed_img) # processed_img.shape: (b, c
 主要有三個檔案 Multicamera.py, directiionmodel.py, cropper.py
 本過濾器主要使用於車子方向的判別與過濾每一台camera需要比對的embedding
 
-## 本repo 用法
-1. 準備資料集，目錄結構如下:
-```
-LABEL
-└── 0902_150000_151900
-    ├── 0_00001.TXT
-    ├── 0_00002.TXT
-    ├── 0_00003.TXT
-    ├── 0_00004.TXT
-    ├── 0_00005.TXT
-    ├── 0_00006.TXT
-    ├── 0_00007.TXT
-    ├── 0_00008.TXT
-    ├── 0_00009.TXT
-    └── 0_00010.TXT
-    └── ...
-```
-```
-IMAGE
-└── 0902_150000_151900
-    ├── 0_00001.jpg
-    ├── 0_00002.jpg
-    ├── 0_00003.jpg
-    ├── 0_00004.jpg
-    ├── 0_00005.jpg
-    ├── 0_00006.jpg
-    ├── 0_00007.jpg
-    ├── 0_00008.jpg
-    ├── 0_00009.jpg
-    └── 0_00010.jpg
-    └── ...
-```
-3. 呼叫 MultiCamera.py 中 multicam
+## 車子過濾器 用法
+
+
+1. 呼叫 MultiCamera.py 中 multicam
 ```
 mutlicam(camera_num, img_path, label_path)
 ```
   * --camera_num 假設現在進行camera N的比對，則camera_num請傳N-1
   * --img_path 存image的資料夾
   * --label_path 存label的資料夾
-4. 回傳兩個list listTo 和 listBack，listTo裝有從N到N+1的車輛ID，listBack裝有從N+1到N的車輛ID
+2. 回傳兩個list listTo 和 listBack，listTo裝有從N到N+1的車輛ID，listBack裝有從N+1到N的車輛ID
 ```
 listTo[]
 listBack[]
 ```
 
-5. 準確度
+3. 準確度
 目前在Test set上有95%的車子能夠過濾成功。
 
 
