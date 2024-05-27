@@ -332,14 +332,16 @@ def directionClassification(img, w, h):
     img = torchvision.transforms.ToPILImage()(img)
     
     #print(type(img))
-    cnn = CNN(8)
-    cnn = torch.load("./models/cnn_model_93_1_65.pt")
-    cnn = cnn.to(device)
+    # cnn = CNN(8)
+    # cnn = torch.load("./models/cnn_model_93_1_65.pt")
+    # cnn = cnn.to(device)
+    net = torch.hub.load('k28998989/MCmodel','cnn')
+    net.to(device)
+    net.eval()
     
-    cnn.eval()
     #print(img.shape)
     #print(nn.Softmax()(cnn(test_transform(img).unsqueeze(dim=0).to(device), w, h)))
-    prediction = torch.argmax(cnn(test_transform(img).unsqueeze(dim=0).to(device), w, h), 1)
+    prediction = torch.argmax(net(test_transform(img).unsqueeze(dim=0).to(device), w, h), 1)
     return prediction
 multiCam(-1)
 # img = Image.open("./4/4431-2-148.jpg")
