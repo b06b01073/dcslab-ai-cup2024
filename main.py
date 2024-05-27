@@ -45,10 +45,10 @@ if __name__ == '__main__':
     parser.add_argument('--finetune', default=False, type=bool, help='Specify whether in finetune mode')
     parser.add_argument('--output_ensemble', default=False, type=bool, help='Output model files for ensemble')
     parser.add_argument('--min_size', default=0, type=float, help='Minimum size of the object to be cropped')
+    parser.add_argument('--parking', action='store_true', help='Specify whether to include parallel parking cars')
 
 
     args = parser.parse_args()
-
 
     
     # To check if it's in fine-tune mode
@@ -133,7 +133,7 @@ if __name__ == '__main__':
             f = open(f'{out}/{args.cam}_{frame_id:05}.txt', 'w')
 
             # Crop objects from the current frame
-            current_objects, info_list, info_list_norm = cropper.crop_frame(image_path=imgs[i], label_path=labels[i])
+            current_objects, info_list, info_list_norm = cropper.crop_frame(image_path=imgs[i], label_path=labels[i], parking=args.parking)
 
             # Extract features for each cropped object
             for j in range(len(current_objects)):
@@ -183,7 +183,7 @@ if __name__ == '__main__':
                     torch.save(output_dist_mat, os.path.join(os.path.join(args.out, args.model, str(args.cam)),f'{frame_id}_whole.pt'))
                     torch.save(ouput_partial_dist_mat, os.path.join(os.path.join(args.out, args.model, str(args.cam)),f'{frame_id}_partial.pt'))
                     torch.save(object_embeddings, os.path.join(os.path.join(args.out, args.model, str(args.cam)),f'{frame_id}_embeddings.pt'))
-                    
+
                     with open(os.path.join(save_folder,f'{frame_id}_info.json'), 'w+') as f:
                         json.dump(info_list, f)
                     with open(os.path.join(save_folder,f'{frame_id}_info_norm.json'), 'w+') as f:

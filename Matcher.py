@@ -3,7 +3,7 @@ import numpy as np
 ERROR = 10
 class Matcher():
 
-    def __init__(self, threshold=0.5, buffer_size=1, lambda_value=0.8):
+    def __init__(self, threshold=0.5, buffer_size=1, lambda_value=0.8, partial_threshold=0.5):
 
         """
         Initialize the Matcher class with threshold, buffer size, and lambda value.
@@ -15,6 +15,7 @@ class Matcher():
         """
 
         self.threshold = threshold
+        self.partial_threshold = partial_threshold
         self.buffer_size = buffer_size
         self.object_buffer = [] # Object buffer stores information about tracked objects
         self.partial_object_buffer = [] # Object buffer stores information about the top, left and right halves and top left, top right corners of tracked objects
@@ -485,7 +486,7 @@ class Matcher():
 
 
     
-    def get_ensemble_id_list(self, object_embeddings, info_list, dist_matrices, cam, rerank=True):
+    def get_ensemble_id_list(self, object_embeddings, info_list, dist_matrices, partial_dist_matrices, cam, rerank=True):
         """
         Match current objects to existing objects in the object buffer or assign new IDs.
 
@@ -545,7 +546,6 @@ class Matcher():
                     for idx in range(len(object_embeddings)):
 
                         if id_list[idx] != -1 or not(self.nearBorder(info_list[idx], cam)):
-
                             continue
 
                         for i, matrix in enumerate(partial_dist_matrices):
@@ -690,7 +690,6 @@ class Matcher():
                     for idx in range(len(object_embeddings)):
 
                         if id_list[idx] != -1 or not(self.nearBorder(info_list[idx], cam)):
-
                             continue
 
                         for i, matrix in enumerate(partial_dist_matrices):

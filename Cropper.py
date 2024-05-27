@@ -75,15 +75,20 @@ class Cropper():
         else:
             return x_center_norm, y_center_norm, w_norm, h_norm
     
-    def inZone(self,left,top,w,h):
+    def inZone(self,left,top,w,h, parking):
         cam0 = [[(0,0), (0,128), (98,186), (348,118), (430,115),(668,0)], [(747,0), (690,145), (730,148), (760,0)], [(816,0), (1083,195), (1280,234),(1280,0)]]
         cam1 = [[(0,0), (0,137), (1024,276), (1280,248)], [(0,172), (0,219), (719,396), (824,358)]]
         cam2 = [[(0,0), (0,322), (81,298), (422,98), (422,0)], [(476,0), (484,308), (611,295), (543,163), (543,0)], [(562,0), (562,99), (1077,299), (1280,325), (1280,0)]]
         cam3 = [[(0,0), (0,345), (260,267), (260,0)], [(5,720), (340,272), (439.720)], [(366,0), (366,272), (1280,476), (1280,0)]]
-        cam4 = [[(0,0), (0,356), (728,0)], [(783,0), (620,363), (734,366)], [(857,0), (1280,356), (1280,0)]]
+        cam4 = [[(283,0), (283,269), (751,0)], [(783,0), (620,363), (734,366)], [(811,0), (1280,480), (1280,0)]]
         cam5 = [[(0,0), (0,283), (74,265), (58,0)], [(0,330), (0,642), (209,590), (109,324)], [(58,0), (68,183), (666,276), (1280,237), (1280,0)], [(731,308), (1280,428), (1280,278)]]
         cam6 = [[(0,0), (0,170), (1280,163), (1280,0)], [(0,200), (0,278), (164,195)], [(712,183), (1058,326), (1280,337), (1280,190)]]
         cam7 = [[(0,97), (0,327), (260,175)], [(310,190), (312,720), (452,720)], [(0,0), (1280,478), (0,97), (1280,478), (1280,0)]]
+
+        if parking:    #allow parallel parking
+             cam3 = [[(0,0), (0,366), (239,267), (239,0)], [(5,720), (340,272), (439.720)], [(366,0), (366,272), (1280,476), (1280,0)]]
+             cam4 = [[(291,0), (291,187), (700,0)], [(783,0), (620,363), (734,366)], [(836,0), (1280,275), (1280,0)]]
+
 
         zones = [cam0, cam1, cam2, cam3, cam4, cam5, cam6, cam7]
 
@@ -102,7 +107,7 @@ class Cropper():
             return False
 
 
-    def crop_frame(self, image_path, label_path, multi=False):
+    def crop_frame(self, image_path, label_path, parking, multi=False):
 
         """
         Crop regions of interest from the image based on bounding box information.
@@ -143,7 +148,7 @@ class Cropper():
                 x_center_norm, y_center_norm, w_norm, h_norm = self.get_image_info(info)
             left, top, w, h = self.convert(W, H, x_center_norm, y_center_norm, w_norm, h_norm)
             
-            if not self.inZone(left, top, w, h) and self.sizeCheck(w, h):
+            if not self.inZone(left, top, w, h, parking) and self.sizeCheck(w, h):
                 if multi:
                     info_list.append([left, top, left+w, top+h, id_])
                     info_list_norm.append([x_center_norm, y_center_norm, w_norm, h_norm, id_])

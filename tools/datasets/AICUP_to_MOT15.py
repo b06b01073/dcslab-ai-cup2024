@@ -57,7 +57,7 @@ def AI_CUP_to_MOT15(args):
                 bb_top = float(data[2]) * img_height - bb_height / 2
                 track_id = data[5].split('\n')
                 f_mot15.write(
-                    f'{str(frame_ID)},{track_id[0]},{str(bb_left)},{str(bb_top)},{str(bb_width)},{str(bb_height)},1,-1,-1,-1\n'
+                    f'{str(frame_ID)},{track_id[0]},{str(bb_left)},{str(bb_top)},{str(bb_width)},{str(bb_height)},1,-1,-1,-1\r\n'
                 )
                 
             f_aicup.close()
