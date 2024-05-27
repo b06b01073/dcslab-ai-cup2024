@@ -439,9 +439,52 @@ class Matcher():
         return matched, motion
     
 
+    def nearBorder(self, info, cam):
+        '''
+        Return True if the object is near the border of the frame, False otherwise.
+
+        Args:
+        - info (list): Information about the object.
+
+        Returns:
+        - bool: True if the object is near the border, False otherwise.
+        '''
+        left_x = info[0]
+        top_y = info[1]
+        right_x = info[2]
+        bottom_y = info[3]
+
+        if cam == 0:
+            if right_x <= 613 and bottom_y >= 710:
+                return True
+        elif cam == 1:
+            if (right_x >= 1270 and top_y >= 406) or bottom_y >= 710:
+                return True
+        elif cam == 2:
+            if right_x <= 596 and bottom_y >= 710:
+                return True
+        elif cam == 3:
+            if left_x <= 10 and top_y >= 290:
+                return True
+        elif cam == 4:
+            if (left_x <= 10 and top_y >= 312) or (right_x <= 624 and bottom_y >= 710):
+                return True 
+        elif cam == 5:
+            if left_x >= 213 and bottom_y >= 710:
+                return True
+        elif cam == 6:
+            return False
+        elif cam == 7:
+            if (left_x <= 10 and top_y >= 338) or (right_x <= 300 and bottom_y >= 710):
+                return True
+
+        return False
+
+
+
 
     
-    def get_ensemble_id_list(self, object_embeddings, info_list, dist_matrices, rerank=True):
+    def get_ensemble_id_list(self, object_embeddings, info_list, dist_matrices, cam, rerank=True):
         """
         Match current objects to existing objects in the object buffer or assign new IDs.
 
@@ -500,7 +543,7 @@ class Matcher():
                 if any(x == -1 for x in id_list) :
                     for idx in range(len(object_embeddings)):
 
-                        if id_list[idx] != -1 or info_list[idx][3] < 710:
+                        if id_list[idx] != -1 or not(self.nearBorder(info_list[idx], cam)):
 
                             continue
 
@@ -645,7 +688,7 @@ class Matcher():
                 if any(x == -1 for x in id_list) :
                     for idx in range(len(object_embeddings)):
 
-                        if id_list[idx] != -1 or info_list[idx][3] < 710:
+                        if id_list[idx] != -1 or not(self.nearBorder(info_list[idx], cam)):
 
                             continue
 

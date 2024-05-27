@@ -146,7 +146,7 @@ if __name__ == '__main__':
 
 
             # Match object embeddings to previous frames
-            id_list=  matcher.get_ensemble_id_list(object_embeddings, info_list, model_dist_mats, model_partial_dist_mats, args.re_rank)
+            id_list=  matcher.get_ensemble_id_list(object_embeddings, info_list, model_dist_mats, model_partial_dist_mats, args.cam, args.re_rank)
 
             # Record coordinates and IDs to the output file
             for n in range(len(info_list)):
