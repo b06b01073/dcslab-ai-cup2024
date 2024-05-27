@@ -10,40 +10,6 @@ class Cropper():
         self.cam = cam
         self.min_size = min_size
 
-    def convert(self, W, H, x_center_norm, y_center_norm, w_norm, h_norm):
-
-        """
-        Convert normalized bounding box coordinates to absolute coordinates.
-
-        Args:
-        - W (int): Width of the original image.
-        - H (int): Height of the original image.
-        - x_center_norm (float): Normalized x-coordinate of the bounding box center.
-        - y_center_norm (float): Normalized y-coordinate of the bounding box center.
-        - w_norm (float): Normalized width of the bounding box.
-        - h_norm (float): Normalized height of the bounding box.
-
-        Returns:
-        - left (int): Left coordinate of the bounding box.
-        - top (int): Top coordinate of the bounding box.
-        - w (int): Width of the bounding box.
-        - h (int): Height of the bounding box.
-        """
-
-        x_center = x_center_norm * W
-        y_center = y_center_norm * H
-        w = int(w_norm * W)
-        h = int(h_norm * H)
-        left = int(x_center - (w/2))
-        top =  int(y_center - (h/2))
-        
-        return left, top, w, h
-
-    def __init__(self, img_width, cam, min_size):
-        self.img_width = img_width
-        self.cam = cam
-        self.min_size = min_size
-
 
     def convert(self, W, H, x_center_norm, y_center_norm, w_norm, h_norm):
 

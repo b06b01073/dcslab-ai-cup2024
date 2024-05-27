@@ -1,4 +1,4 @@
-from directionModel import directionClassification
+#from directionModel import directionClassification
 from Cropper import Cropper
 import torch.nn as nn
 import torchvision
@@ -6,6 +6,11 @@ import os
 import torch
 from PIL import Image
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+test_transform = torchvision.transforms.Compose([
+    torchvision.transforms.ToTensor(),
+    torchvision.transforms.Resize([64,64]),
+    torchvision.transforms.Normalize((.5, .5, .5), (.5, .5, .5))
+])
 class CNN(nn.Module):
     def __init__(self, num_classes: int):
         super(CNN, self).__init__()
@@ -177,7 +182,7 @@ def Backward(j, carToNext):
     tmpDict = {}
     for k in range(360, 0, -1):
         image_path, label_path = ImgandLabel(j , k)
-        Crop = Cropper(224)
+        Crop = Cropper(224, j, 20)
         img, info_list, info_list_norm = Crop.crop_frame(image_path, label_path, True)
         camera = j
         GetBBofEachFrame(False, camera, img, info_list, info_list_norm, j, k, tmpDict, previousDirection, previousReject, previousX, previousY)
@@ -193,7 +198,7 @@ def Forward(j, carToNext):
     previousY = {}
     for k in range(1, 361):
         image_path, label_path = ImgandLabel(j , k)
-        Crop = Cropper(224)
+        Crop = Cropper(224, j, 20)
         img, info_list, info_list_norm = Crop.crop_frame(image_path, label_path, True)
         camera = j
         GetBBofEachFrame(True, camera, img, info_list, info_list_norm, j, k, carToNext, previousDirection, previousReject, previousX, previousY)
@@ -321,8 +326,22 @@ def toCamera(Forward, current_camera, direction):
             return 8
     return current_camera-1        
         
-
-# multiCam(-1)
+def directionClassification(img, w, h): 
+    #print(type(img))
+    
+    img = torchvision.transforms.ToPILImage()(img)
+    
+    #print(type(img))
+    cnn = CNN(8)
+    cnn = torch.load("./models/cnn_model_93_1_65.pt")
+    cnn = cnn.to(device)
+    
+    cnn.eval()
+    #print(img.shape)
+    #print(nn.Softmax()(cnn(test_transform(img).unsqueeze(dim=0).to(device), w, h)))
+    prediction = torch.argmax(cnn(test_transform(img).unsqueeze(dim=0).to(device), w, h), 1)
+    return prediction
+multiCam(-1)
 # img = Image.open("./4/4431-2-148.jpg")
 # w, h = img.size
 # direction = directionClassification(img, w, h)
