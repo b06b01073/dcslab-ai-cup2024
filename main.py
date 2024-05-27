@@ -177,6 +177,30 @@ if __name__ == '__main__':
             if args.output_ensemble:
                     save_folder = os.path.join(args.out, args.model, str(args.cam))
                     os.makedirs(save_folder, exist_ok=True)
-                    torch.save(output_dist_mat, os.path.join(os.path.join(args.out, args.model, str(args.cam)),f'{frame_id}.pt'))
+                    torch.save(output_dist_mat, os.path.join(os.path.join(args.out, args.model, str(args.cam)),f'{frame_id}_whole.pt'))
                     torch.save(ouput_partial_dist_mat, os.path.join(os.path.join(args.out, args.model, str(args.cam)),f'{frame_id}_partial.pt'))
-                    torch.save(object_embeddi
+                    torch.save(object_embeddings, os.path.join(os.path.join(args.out, args.model, str(args.cam)),f'{frame_id}_embeddings.pt'))
+                    
+                    with open(os.path.join(save_folder,f'{frame_id}_info.json'), 'w+') as f:
+                        json.dump(info_list, f)
+                    with open(os.path.join(save_folder,f'{frame_id}_info_norm.json'), 'w+') as f:
+                        json.dump(info_list_norm, f)
+
+                    
+
+            frame_id += 1
+
+            # Draw bounding boxes if visualization is enabled
+            if args.visualize:
+                image = cv2.imread(imgs[i])
+                for n in range(len(info_list)):
+                    color = palette.get_color(id_list[n])
+                    cv2.rectangle(image, (info_list[n][0], info_list[n][1]), (info_list[n][2], info_list[n][3]), color, 2)
+                    cv2.putText(image, text=str(id_list[n]), org=(info_list[n][0], info_list[n][1] - 5), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=2, color=color, thickness=3)
+
+
+                video_out.write(image)
+
+    # Release video writer if visualization is enabled
+    if args.visualize:
+        video_out.release()
