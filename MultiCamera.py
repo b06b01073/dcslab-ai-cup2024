@@ -11,90 +11,8 @@ test_transform = torchvision.transforms.Compose([
     torchvision.transforms.Resize([64,64]),
     torchvision.transforms.Normalize((.5, .5, .5), (.5, .5, .5))
 ])
-class CNN(nn.Module):
-    def __init__(self, num_classes: int):
-        super(CNN, self).__init__()
-        self.num_classes = num_classes
-
-        # in[N, 3, 32, 32] => out[N, 16, 16, 16]
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(
-                in_channels=3,
-                out_channels=16,
-                kernel_size=5,
-                stride=1,
-                padding=2
-            ),
-            nn.ReLU(True),
-            nn.MaxPool2d(kernel_size=2)
-        )
-        # in[N, 16, 16, 16] => out[N, 32, 8, 8]
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(16, 32, 5, 1, 2),
-            nn.ReLU(True),
-            nn.MaxPool2d(2)
-
-        )
-        # in[N, 32 * 8 * 8] => out[N, 128]
-        self.fc1 = nn.Sequential(
-            nn.Linear(32 * 8 * 8 * 4, 256),
-            nn.ReLU(True)
-        )
-        # in[N, 128] => out[N, 64]
-        self.fc2 = nn.Sequential(
-            nn.Linear(256, 128),
-            nn.ReLU(True)
-        )
-        self.fc3 = nn.Sequential(
-            nn.Linear(128, 64),
-            nn.ReLU(True)
-        )
-        # in[N, 64] => out[N, 10]
-        self.out = nn.Linear(65, self.num_classes)
-
-    # def forward(self, x):
-    #     x = self.conv1(x)
-    #     x = self.conv2(x)
-    #     x = x.view(x.size(0), -1) # [N, 32 * 8 * 8]
-    #     x = self.fc1(x)
-    #     x = self.fc2(x)
-    #     x = self.fc3(x)
-    #     output = self.out(x)
-    #     return output
-    # def forward(self, x, w, h):
-    #     x = self.conv1(x)
-    #     x = self.conv2(x)
-    #     x = x.view(x.size(0), -1) # [N, 32 * 8 * 8]
-    #     x = self.fc1(x)
-    #     x = self.fc2(x)
-    #     x = self.fc3(x)
-    #     w = torch.unsqueeze(torch.unsqueeze(torch.tensor(w).to(device),0),1)
-    #     h = torch.unsqueeze(torch.unsqueeze(torch.tensor(h).to(device),0),1)
-        
-        
-    #     x = torch.cat((x,w),dim=1)
-    #     x = torch.cat((x,h),dim=1)
-    #     #print(x.shape)
-    #     #print(x.shape)
-    #     output = self.out(x)
-    #     return output
-    def forward(self, x, w, h):
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = x.view(x.size(0), -1) # [N, 32 * 8 * 8]
-        x = self.fc1(x)
-        x = self.fc2(x)
-        x = self.fc3(x)
-        handw = h/w
-        #print(handw)
-        handw = torch.unsqueeze(torch.unsqueeze(torch.tensor(handw).to(device),0),1)
-        #print(x.shape, w.shape, h.shape)
-        x = torch.cat((x,handw),dim=1)
-        #print(x.shape)
-        output = self.out(x)
-        return output
-    
-def multiCam(camera_num):
+  
+def multiCam(camera_num, img_path, label_path):
     '''
     This function can choose the cars that will cross camera.
 
@@ -106,31 +24,39 @@ def multiCam(camera_num):
     '''
     carToNext = {}
     count = 0
+    net = torch.hub.load('k28998989/MCmodel','cnn')
+    net.to(device)
+    net.eval()
     for i in range(0, 8):
         if not os.path.exists(str(i)):
             os.mkdir(str(i))
     if camera_num == -1:
         for j in range(0, 8):
             count = 0
-            Forward(j, carToNext)
-            Backward(j ,carToNext)
-        print(carToNext)
+            Forward(net, j, carToNext, img_path, label_path)
+            listTo, listBack = Backward(net, j ,carToNext, img_path, label_path)
+            print(len(carToNext))
+            for z in carToNext:
+                if carToNext[z] == j+1:
+                    count += 1
+            print(count)
+            print(carToNext)
     else:
-        Forward(camera_num, carToNext)
-        Backward(camera_num ,carToNext)
-    return carToNext
-def ImgandLabel(j, k):
+        Forward(net, camera_num, carToNext, img_path, label_path)
+        listTo, listBack = Backward(net, camera_num ,carToNext, img_path, label_path)
+    return listTo, listBack
+def ImgandLabel(j, k, img_path, label_path):
     if k < 10:
         tag = "_0000"
     elif k < 100:
         tag = "_000"
     else:
         tag = "_00"
-    image_path = "./test_set/IMAGE/1016_150000_151900/" + str(j) + tag + str(k) + ".jpg"
-    label_path = "./test_set/LABEL/1016_150000_151900/" + str(j) + tag + str(k) + ".txt"
-    return image_path, label_path
+    image_path = img_path + str(j) + tag + str(k) + ".jpg"
+    lab_path = label_path + str(j) + tag + str(k) + ".txt"
+    return image_path, lab_path
 
-def GetBBofEachFrame(Forward, camera, img, info_list, info_list_norm, j, k, carToNext, previousDirection, previousReject, previousX, previousY):
+def GetBBofEachFrame(Forward, camera, img, info_list, info_list_norm, j, k, carToNext, previousDirection, previousReject, previousX, previousY, net):
         
     count = 0
     for i in range(0, img.size(dim=0)):
@@ -144,7 +70,7 @@ def GetBBofEachFrame(Forward, camera, img, info_list, info_list_norm, j, k, carT
                 count+=1
                 print(car_id, carToNext[car_id], j, k)
             
-        direction = directionClassification(img[i], w, h)
+        direction = directionClassification(net, img[i], w, h)
         # if(car_id == 4474 or car_id == 4486 or car_id == 4476):
         #     torchvision.utils.save_image(img[i], str(direction[0].item()) + "/" + str(car_id)+ "-"+str(j)+"-"+str(k)+'.jpg') 
         check=True
@@ -173,35 +99,42 @@ def GetBBofEachFrame(Forward, camera, img, info_list, info_list_norm, j, k, carT
         #     print(car_id, direction, carToNext[car_id], k)
            # print(previousReject[car_id], previousDirection[car_id])
        
-def Backward(j, carToNext):
+def Backward(net, j, carToNext, img_path, label_path):
     print("------camera_"+str(j)+"_Backwarding------")
     previousDirection = {}
     previousReject = {}
     previousX = {}
     previousY = {}
+    tmpTolist = []
+    tmpBacklist = []
     tmpDict = {}
     for k in range(360, 0, -1):
-        image_path, label_path = ImgandLabel(j , k)
+        image_path, lab_path = ImgandLabel(j , k, img_path, label_path)
         Crop = Cropper(224, j, 20)
-        img, info_list, info_list_norm = Crop.crop_frame(image_path, label_path, True)
+        img, info_list, info_list_norm = Crop.crop_frame(image_path, lab_path, True)
         camera = j
-        GetBBofEachFrame(False, camera, img, info_list, info_list_norm, j, k, tmpDict, previousDirection, previousReject, previousX, previousY)
+        GetBBofEachFrame(False, camera, img, info_list, info_list_norm, j, k, tmpDict, previousDirection, previousReject, previousX, previousY, net)
     for key in tmpDict.keys():
+        if tmpDict[key] == j+1:
+            tmpBacklist.append(key)
+        if carToNext[key] == j+1:
+            tmpTolist.append(key)
         if carToNext[key] == j+1 or tmpDict[key] == j+1:
             carToNext[key] = j+1
+    return tmpTolist, tmpBacklist
 
-def Forward(j, carToNext):
+def Forward(net, j, carToNext, img_path, label_path):
     print("------camera_"+str(j)+"_Forwarding------")
     previousDirection = {}
     previousReject = {}
     previousX = {}
     previousY = {}
     for k in range(1, 361):
-        image_path, label_path = ImgandLabel(j , k)
+        image_path, lab_path = ImgandLabel(j , k, img_path, label_path)
         Crop = Cropper(224, j, 20)
-        img, info_list, info_list_norm = Crop.crop_frame(image_path, label_path, True)
+        img, info_list, info_list_norm = Crop.crop_frame(image_path, lab_path, True)
         camera = j
-        GetBBofEachFrame(True, camera, img, info_list, info_list_norm, j, k, carToNext, previousDirection, previousReject, previousX, previousY)
+        GetBBofEachFrame(True, camera, img, info_list, info_list_norm, j, k, carToNext, previousDirection, previousReject, previousX, previousY, net)
         
 def direction_check(previous, current, rej, preX, preY, cuX, cuY):
     down = 0 
@@ -326,7 +259,7 @@ def toCamera(Forward, current_camera, direction):
             return 8
     return current_camera-1        
         
-def directionClassification(img, w, h): 
+def directionClassification(net, img, w, h): 
     #print(type(img))
     
     img = torchvision.transforms.ToPILImage()(img)
@@ -335,15 +268,15 @@ def directionClassification(img, w, h):
     # cnn = CNN(8)
     # cnn = torch.load("./models/cnn_model_93_1_65.pt")
     # cnn = cnn.to(device)
-    net = torch.hub.load('k28998989/MCmodel','cnn')
-    net.to(device)
-    net.eval()
+    
     
     #print(img.shape)
     #print(nn.Softmax()(cnn(test_transform(img).unsqueeze(dim=0).to(device), w, h)))
     prediction = torch.argmax(net(test_transform(img).unsqueeze(dim=0).to(device), w, h), 1)
     return prediction
-multiCam(-1)
+listTo, listBack = multiCam(0, "./test_set/IMAGE/1016_150000_151900/", "./test_set/LABEL/1016_150000_151900/")
+print(listTo)
+print(listBack)
 # img = Image.open("./4/4431-2-148.jpg")
 # w, h = img.size
 # direction = directionClassification(img, w, h)
