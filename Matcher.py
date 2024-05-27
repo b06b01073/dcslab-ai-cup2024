@@ -376,7 +376,7 @@ class Matcher():
         return dist_matrix
 
 
-        def compute_partial_distmatrix(self, object_embeddings):
+    def compute_partial_distmatrix(self, object_embeddings):
 
         """
         Compute the cosine similarity distance matrix between current object embeddings and existing partial object embeddings.
