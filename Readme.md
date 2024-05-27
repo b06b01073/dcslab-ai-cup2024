@@ -233,16 +233,15 @@ IMAGE
 ```
 3. 呼叫 MultiCamera.py 中 multicam
 ```
-mutlicam(camera_num)
+mutlicam(camera_num, img_path, label_path)
 ```
   * --camera_num 假設現在進行camera N的比對，則camera_num請傳N-1
-4. 回傳值 N-1 camera中所有車輛的id及其到哪個camera
+  * --img_path 存image的資料夾
+  * --label_path 存label的資料夾
+4. 回傳兩個list listTo 和 listBack，listTo裝有從N到N+1的車輛ID，listBack裝有從N+1到N的車輛ID
 ```
-carToNext = {} 此為一個dictionary
-```
-使用方式
-```
-current_camera = carToNext[car_id]
+listTo[]
+listBack[]
 ```
 
 5. 準確度
