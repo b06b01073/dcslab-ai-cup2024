@@ -122,6 +122,7 @@ if __name__ == '__main__':
         for i in tqdm(range(len(imgs)), dynamic_ncols=True):
             current_objects = []    
             object_embeddings = torch.empty(0, 2048).to(device)
+            partial_embeddings = torch.empty(0, 2048).to(device)
             info_list = []
             info_list_norm = []
             
@@ -158,6 +159,8 @@ if __name__ == '__main__':
                 _, top_left_feature, _ = extracter(torch.unsqueeze(transform(top_left),0).to(device))
                 _, top_right_feature, _ = extracter(torch.unsqueeze(transform(top_right),0).to(device))
 
+                partial_embeddings = torch.cat((partial_embeddings, top_feature, left_feature, right_feature, top_left_feature, top_right_feature), dim=0)
+
             #embedding normalization
             if object_embeddings.numel() != 0:
                 embedding_norm = torch.linalg.norm(object_embeddings, dim=1, keepdims=True)
@@ -167,7 +170,7 @@ if __name__ == '__main__':
                 partial_embeddings = partial_embeddings / partial_embedding_norm
 
             # Match object embeddings to previous frames
-            id_list, output_dist_mat, ouput_partial_dist_mat =  matcher.match(object_embeddings, info_list, args.re_rank)
+            id_list, output_dist_mat, ouput_partial_dist_mat =  matcher.match(object_embeddings, partial_embeddings, info_list, args.re_rank)
 
 
             # Record coordinates and IDs to the output file

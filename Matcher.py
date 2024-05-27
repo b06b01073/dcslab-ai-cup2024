@@ -19,6 +19,7 @@ class Matcher():
         self.object_buffer = [] # Object buffer stores information about tracked objects
         self.partial_object_buffer = [] # Object buffer stores information about the top, left and right halves and top left, top right corners of tracked objects
         self.object_in_frame = [] # Number of objects in each frame
+        self.partial_object_in_frame = [] # Number of partial objects in each frame
         self.id = 0 # Current ID for assigning to new objects
         self.lambda_value = lambda_value
     
