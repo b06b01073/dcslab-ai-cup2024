@@ -44,6 +44,7 @@ if __name__ == '__main__':
     parser.add_argument('--finetune', default=False, type=bool, help='Specify whether in finetune mode')
     parser.add_argument('--re_rank', type=bool, default=False)
     parser.add_argument('--min_size', default=0, type=float, help='Minimum size of the object to be cropped')
+    parser.add_argument('--use_partial', action='store_true', type=bool, help='Specify whether to use partial distance matrix')
     args = parser.parse_args()
 
 
@@ -146,7 +147,7 @@ if __name__ == '__main__':
 
 
             # Match object embeddings to previous frames
-            id_list=  matcher.get_ensemble_id_list(object_embeddings, info_list, model_dist_mats, model_partial_dist_mats, args.cam, args.re_rank)
+            id_list=  matcher.get_ensemble_id_list(object_embeddings, info_list, model_dist_mats, model_partial_dist_mats, args.cam, args.use_partial, args.re_rank)
 
             # Record coordinates and IDs to the output file
             for n in range(len(info_list)):

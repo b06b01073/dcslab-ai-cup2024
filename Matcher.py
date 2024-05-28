@@ -486,7 +486,7 @@ class Matcher():
 
 
     
-    def get_ensemble_id_list(self, object_embeddings, info_list, dist_matrices, partial_dist_matrices, cam, rerank=True):
+    def get_ensemble_id_list(self, object_embeddings, info_list, dist_matrices, partial_dist_matrices, cam, use_partial, rerank=True):
         """
         Match current objects to existing objects in the object buffer or assign new IDs.
 
@@ -542,7 +542,7 @@ class Matcher():
                             average_dist_matrix[row][col] = 2
                             _ -= 1
                 # Check if there are any unmatched objects and try to match with partial objects
-                if any(x == -1 for x in id_list) :
+                if any(x == -1 for x in id_list) and use_partial:
                     for idx in range(len(object_embeddings)):
 
                         if id_list[idx] != -1 or not(self.nearBorder(info_list[idx], cam)):
@@ -686,7 +686,7 @@ class Matcher():
                             _ -= 1
 
                 # Check if there are any unmatched objects and try to match with partial objects
-                if any(x == -1 for x in id_list) :
+                if any(x == -1 for x in id_list) and use_partial :
                     for idx in range(len(object_embeddings)):
 
                         if id_list[idx] != -1 or not(self.nearBorder(info_list[idx], cam)):
@@ -820,18 +820,21 @@ class Matcher():
             object_info = [object_embeddings[i], info_list[i], id_list[i], motion_tracklet[i]]
             self.object_buffer.append(object_info)
 
-        for i in range(len(object_embeddings)*5):
-            partial_object_info = [object_embeddings[i//5].cpu().numpy(), info_list[i//5], id_list[i//5], motion_tracklet[i//5]]
-            self.partial_object_buffer.append(object_info)
+        if use_partial:
+            for i in range(len(object_embeddings)*5):
+                partial_object_info = [object_embeddings[i//5].cpu().numpy(), info_list[i//5], id_list[i//5], motion_tracklet[i//5]]
+                self.partial_object_buffer.append(object_info)
 
         # Remove old objects from the object buffer if buffer size exceeds the limit
         if len(self.object_in_frame) > self.buffer_size:
             for i in range(self.object_in_frame[0]):
                 self.object_buffer.pop(0)
             self.object_in_frame.pop(0)
-        if len(self.partial_object_in_frame) > self.buffer_size:
-            for i in range(self.partial_object_in_frame[0]):
-                self.partial_object_buffer.pop(0)
-            self.partial_object_in_frame.pop(0)
+
+        if use_partial:
+            if len(self.partial_object_in_frame) > self.buffer_size:
+                for i in range(self.partial_object_in_frame[0]):
+                    self.partial_object_buffer.pop(0)
+                self.partial_object_in_frame.pop(0)
 
         return id_list
