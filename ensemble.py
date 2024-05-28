@@ -44,7 +44,7 @@ if __name__ == '__main__':
     parser.add_argument('--finetune', default=False, type=bool, help='Specify whether in finetune mode')
     parser.add_argument('--re_rank', type=bool, default=False)
     parser.add_argument('--min_size', default=0, type=float, help='Minimum size of the object to be cropped')
-    parser.add_argument('--use_partial', action='store_true', type=bool, help='Specify whether to use partial distance matrix')
+    parser.add_argument('--use_partial', action='store_true', help='Specify whether to use partial distance matrix')
     args = parser.parse_args()
 
 

@@ -46,6 +46,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_ensemble', default=False, type=bool, help='Output model files for ensemble')
     parser.add_argument('--min_size', default=0, type=float, help='Minimum size of the object to be cropped')
     parser.add_argument('--parking', action='store_true', help='Specify whether to include parallel parking cars')
+    parser.add_argument('--use_partial', action='store_true', help='Specify whether to use partial distance matrix')
 
 
     args = parser.parse_args()
@@ -170,7 +171,7 @@ if __name__ == '__main__':
                 partial_embeddings = partial_embeddings / partial_embedding_norm
 
             # Match object embeddings to previous frames
-            id_list, output_dist_mat, ouput_partial_dist_mat =  matcher.match(object_embeddings, partial_embeddings, info_list, args.re_rank)
+            id_list, output_dist_mat, ouput_partial_dist_mat =  matcher.match(object_embeddings, partial_embeddings, info_list, args.use_partial, args.re_rank)
 
 
             # Record coordinates and IDs to the output file
