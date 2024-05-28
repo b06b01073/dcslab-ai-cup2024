@@ -761,7 +761,7 @@ class Matcher():
         self.partial_object_in_frame.append(len(object_embeddings)*5)
 
         # Matching objects to existing objects in the object buffer
-        if self.object_buffer and object_embeddings.size != 0:
+        if self.object_buffer and object_embeddings.numel() != 0:
             
             #get the average distance matrix
             for i, matrix in enumerate(dist_matrices):
