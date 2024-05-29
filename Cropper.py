@@ -75,7 +75,7 @@ class Cropper():
         else:
             return x_center_norm, y_center_norm, w_norm, h_norm
     
-    def inZone(self,left,top,w,h, parking):
+    def inZone(self,left,top,w,h, parking=True):
         cam0 = [[(0,0), (0,128), (98,186), (348,118), (430,115),(668,0)], [(747,0), (690,145), (730,148), (760,0)], [(816,0), (1083,195), (1280,234),(1280,0)]]
         cam1 = [[(0,0), (0,137), (1024,276), (1280,248)], [(0,172), (0,219), (719,396), (824,358)]]
         cam2 = [[(0,0), (0,322), (81,298), (422,98), (422,0)], [(476,0), (484,308), (611,295), (543,163), (543,0)], [(562,0), (562,99), (1077,299), (1280,325), (1280,0)]]
@@ -107,7 +107,7 @@ class Cropper():
             return False
 
 
-    def crop_frame(self, image_path, label_path, parking, multi=False):
+    def crop_frame(self, image_path, label_path, parking=True, multi=False):
 
         """
         Crop regions of interest from the image based on bounding box information.
