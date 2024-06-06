@@ -197,3 +197,8 @@ eu_embedding, cos_embedding, _ = net(processed_img) # processed_img.shape: (b, c
 
 # The rest is the same as the code example from veri776-pretrain repo
 ```
+
+
+## About fine-tuning and pre-training
+
+關於 fine-tuning 以及 pre-training 相關的程式碼以及說明分別被放在 contest-finetune 以及 veri776-pretrained 資料夾底下
