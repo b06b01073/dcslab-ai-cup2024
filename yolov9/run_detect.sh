@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Define the parent directory containing the subdirectories
-PARENT_DIR="../32_33_AI_CUP_testdataset/32_33_AI_CUP_testdataset/AI_CUP_testdata/images"
-WEIGHTS_PATH="runs/train/yolov9-c-small-lr/weights/best.pt"
+PARENT_DIR="../AI_CUP_testdata/images"
+WEIGHTS_PATH="weights/yolov9-c-fine-tune.pt"
 DEVICE="0"
 
 
