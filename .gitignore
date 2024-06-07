@@ -19,7 +19,6 @@ v9_result
 v8_result
 video_result_ensemble
 yolov8
-yolov9
 .config
 *.txt
 aicup_ts_ensemble
