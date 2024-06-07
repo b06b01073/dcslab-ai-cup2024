@@ -97,6 +97,10 @@ def run(
             visualize = increment_path(save_dir / Path(path).stem, mkdir=True) if visualize else False
             pred = model(im, augment=augment, visualize=visualize)
 
+        # Ensure pred is a tensor
+        if isinstance(pred, list):
+            pred = pred[0]  # assuming the model returns a list with one element
+            
         # NMS
         with dt[2]:
             pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
