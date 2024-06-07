@@ -7,6 +7,15 @@ from shapely.geometry import Polygon
 class Cropper():
 
     def __init__(self, img_width, cam, min_size):
+        """
+        Initialize the Cropper class with image width, camera ID, and minimum size for bounding boxes.
+
+        Args:
+        - img_width (int): Width to which the cropped image regions will be resized.
+        - cam (int): Camera ID to determine specific zones for bounding box inclusion.
+        - min_size (int): Minimum area size for bounding boxes to be considered.
+        """
+
         self.img_width = img_width
         self.cam = cam
         self.min_size = min_size
@@ -76,6 +85,18 @@ class Cropper():
             return x_center_norm, y_center_norm, w_norm, h_norm
     
     def inZone(self,left,top,w,h):
+        """
+        Check if the bounding box is within predefined zones for a specific camera.
+
+        Args:
+        - left (int): Left coordinate of the bounding box.
+        - top (int): Top coordinate of the bounding box.
+        - w (int): Width of the bounding box.
+        - h (int): Height of the bounding box.
+
+        Returns:
+        - bool: True if the bounding box is within the zone, False otherwise.
+        """
         cam0 = [[(0,0), (0,128), (98,186), (348,118), (430,115),(668,0)], [(747,0), (690,145), (730,148), (760,0)], [(816,0), (1083,195), (1280,234),(1280,0)]]
         cam1 = [[(0,0), (0,137), (1024,276), (1280,248)], [(0,172), (0,219), (719,396), (824,358)]]
         cam2 = [[(0,0), (0,322), (81,298), (422,98), (422,0)], [(476,0), (484,308), (611,295), (543,163), (543,0)], [(562,0), (562,99), (1077,299), (1280,325), (1280,0)]]
@@ -96,6 +117,16 @@ class Cropper():
                 return False
     
     def sizeCheck(self, w, h):
+        """
+        Check if the bounding box meets the minimum size requirement.
+
+        Args:
+        - w (int): Width of the bounding box.
+        - h (int): Height of the bounding box.
+
+        Returns:
+        - bool: True if the bounding box meets the minimum size requirement, False otherwise.
+        """
         if w * h >= self.min_size:
             return True
         else:

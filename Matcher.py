@@ -22,12 +22,24 @@ class Matcher():
         self.lambda_value = lambda_value
     
     def multi_match(self, dist_matrix, matched_set, current_set):
+        """
+        Multi-match objects based on a distance matrix.
+
+        Args:
+        - dist_matrix (tensor): Distance matrix between matched and current sets.
+        - matched_set (dict): Set of already matched objects.
+        - current_set (dict): Set of current objects.
+
+        Returns:
+        - new_set (dict): Updated set with newly matched objects.
+        - matched_list (list): List of matched objects.
+        """
         matched_list = []
-        new_set = current_set.copy()
+        new_set = dict((-i, current_set[i]) for i in current_set.keys())
         if dist_matrix.numel() != 0:
             for _ in range(len(dist_matrix)):
                 max_dist, row, col = self.get_max(dist_matrix)
-                if max_dist == -2 or max_dist < self.threshold:
+                if max_dist == float('-inf') or max_dist < self.threshold:
                     break
                 else:
                     key_1_list = list(matched_set.keys())
@@ -39,9 +51,9 @@ class Matcher():
                     else:
                         print(f'id {key_1_list[row]} is already matched.')
 
-                    new_set[key_1_list[row]] = new_set.pop(key_2_list[col])
-                    dist_matrix[row,:] = -2
-                    dist_matrix[:,col] = -2
+                    new_set[key_1_list[row]] = new_set.pop(-(key_2_list[col]))
+                    dist_matrix[row,:] = float('-inf')
+                    dist_matrix[:,col] = float('-inf')
 
 
         return new_set, matched_list
@@ -356,30 +368,6 @@ class Matcher():
         return self.id-1
 
 
-    def rule_1(self, x_motion, y_motion, x_offset, y_offset):   
-        matched = 0
-        motion = [0, 0]
-        if x_motion == 0 and y_motion == 0:
- 
-            motion[0] = -1 if x_offset < 0 else 1
-            motion[1] = -1 if y_offset < 0 else 1
-            matched = 1
-        else:
-            x_offset -= ERROR * (1 if x_motion < 0 else -1)
-            y_offset -= ERROR * (1 if y_motion < 0 else -1)
-            if x_offset > 0 and y_offset > 0 and x_motion > 0 and y_motion > 0:
-                motion = [1, 1]
-                matched = 1
-            elif x_offset < 0 and y_offset < 0 and x_motion < 0 and y_motion < 0:
-                motion = [-1, -1]
-                matched = 1
-            elif x_offset > 0 and y_offset < 0 and x_motion > 0 and y_motion < 0:
-                motion = [1, -1]
-                matched = 1
-            elif x_offset < 0 and y_offset > 0 and x_motion < 0 and y_motion > 0:
-                motion = [-1, 1]
-                matched = 1
-        return matched, motion
     
 
 

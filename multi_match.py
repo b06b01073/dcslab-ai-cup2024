@@ -9,7 +9,7 @@ from tqdm import tqdm
 from Matcher import Matcher
 
 
-
+# Function to find the maximum cosine similarity between two clusters
 def cluster_max(list_1, list_2):
     max_sim = -100
     for i in list_1:
@@ -19,7 +19,8 @@ def cluster_max(list_1, list_2):
                 max_sim = similarity
 
     return max_sim
-    
+
+# Function to find the minimum cosine similarity between two clusters
 def cluster_min(list_1, list_2):
     min_sim = 100
     for i in list_1:
@@ -29,6 +30,7 @@ def cluster_min(list_1, list_2):
                 min_sim = similarity
     return min_sim
 
+# Function to find the average cosine similarity between all pairs of elements in two clusters (version 1)
 def cluster_ave_v1(list_1, list_2):
     len_1 = len(list_1)
     len_2 = len(list_2)
@@ -39,6 +41,7 @@ def cluster_ave_v1(list_1, list_2):
             sum_sim += similarity / (len_1 * len_2)
     return sum_sim
 
+# Function to find the cosine similarity between the mean vectors of two clusters (version 2)
 def cluster_ave_v2(list_1, list_2):
     mean_sim_1 = torch.mean(list_1, dim=0)
     mean_sim_2 = torch.mean(list_2, dim=0)
@@ -47,12 +50,7 @@ def cluster_ave_v2(list_1, list_2):
            
     return similarity
 
-MODE = {
-    'max' : cluster_max,
-    'min' : cluster_min,
-    'ave_v1' : cluster_ave_v1,
-    'ave_v2' : cluster_ave_v2
-}
+
 
 
 if __name__ == '__main__':
@@ -65,10 +63,17 @@ if __name__ == '__main__':
     parser.add_argument('--finetune', default=False, type=bool, help='Specify whether in finetune mode')
     args = parser.parse_args()
 
+    # Dictionary to map modes to their corresponding functions
+    MODE = {
+        'max' : cluster_max,
+        'min' : cluster_min,
+        'ave_v1' : cluster_ave_v1,
+        'ave_v2' : cluster_ave_v2
+    }
 
 
 
-    out_folder = os.path.join(f'final_result','labels', f'{args.model}_{args.mode}_{int(args.threshold)}',f'{args.date}')
+    out_folder = os.path.join(f'RE_FINAL_result_v3','labels', f'{args.model}_{args.mode}_{int(args.threshold)}',f'{args.date}')
 
 
     # To check if it's in fine-tune mode
@@ -78,7 +83,7 @@ if __name__ == '__main__':
 
 
     # Load the pre-trained model for feature extraction
-    extracter = torch.hub.load('b06b01073/dcslab-ai-cup2024', args.model) 
+    extracter = torch.hub.load('b06b01073/dcslab-ai-cup2024', args.model, use_test=True) 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(f'model is running on {device}.')
     extracter = extracter.to(device)
@@ -108,11 +113,11 @@ if __name__ == '__main__':
         matcher = Matcher(threshold=args.threshold)
 
         #check if the output of the single camera tracking.
-        if not os.path.exists(f'../../dcslab-ai-cup2024/aicup_gt/labels/{args.date}/{cam}'):
+        if not os.path.exists(f'RE_RESULT/labels/{args.date}/swin_reid/{cam}'):
             print(f'The output from camera {cam} does not exist.')
             continue
         # Set up the FrameLoader to load frames
-        frameloader = FrameLoader(f'../../IMAGE/{args.date}', f'../../dcslab-ai-cup2024/aicup_gt/labels/{args.date}/{cam}')
+        frameloader = FrameLoader(f'../32_33_AI_CUP_testdataset/AI_CUP_testdata/images/{args.date}', f'RE_RESULT/labels/{args.date}/swin_reid/{cam}')
 
         # Load data for the current camera
         imgs, labels = frameloader.load(cam)
@@ -146,7 +151,7 @@ if __name__ == '__main__':
                         f.close()
 
 
-                for i in range(1, 361):
+                for i in range(1, len(imgs)+1):
                     if i not in frame_wrote:
                         f = open(f'{out_folder}/{cam}_{i:05}.txt', 'a')
                         f.write(f'')
@@ -204,7 +209,7 @@ if __name__ == '__main__':
                 current_set = tmp.copy()
 
 
-                for i in range(1, 361):
+                for i in range(1, len(imgs)+1):
                     if i not in frame_wrote:
                         f = open(f'{out_folder}/{cam}_{i:05}.txt', 'a')
                         f.write(f'')

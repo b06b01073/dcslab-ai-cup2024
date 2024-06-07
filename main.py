@@ -25,8 +25,14 @@ class Palette:
 
         return self.colors[id]
 
-
-
+# Constants for buffer sizes and thresholds
+BUFFER_SIZE = {0:5, 1:2, 2:3, 3:6, 4:6, 5:10, 6:4, 7:3}
+THRESHOLD_NIGHT = {0:0.6, 1:0.6, 2:0.58, 3:0.62, 4:0.6, 5:0.56, 6:0.56, 7:0.6}
+THRESHOLD_MORN = {0:0.66, 1:0.66, 2:0.62, 3:0.6, 4:0.56, 5:0.64, 6:0.64, 7:0.64}
+NIGHT = ['1001_180000_181558', '1002_180000_181600', '1015_180001_183846', '1016_180000_181600']
+MORN = ['0902_130006_131041', '0902_180000_181551', '0903_125957_131610', '0903_175958_181607', 
+        '0924_125953_132551', '0924_175955_181603', '0925_130000_131605', '0925_175958_181604',
+        '1001_130000_131559', '1002_130000_131600', '1015_130000_131600', '1016_180000_181600']
 
 
 if __name__ == '__main__':
@@ -69,7 +75,7 @@ if __name__ == '__main__':
     frameloader = FrameLoader(args.frame_dir, args.label_dir)
 
     # Load the pre-trained model for feature extraction
-    extracter = torch.hub.load('b06b01073/dcslab-ai-cup2024', args.model) # 將 fine_tuned 設為 True 會 load fine-tuned 後的 model
+    extracter = torch.hub.load('b06b01073/dcslab-ai-cup2024', args.model, use_test=True) 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(f'model is running on {device}.')
     extracter = extracter.to(device)
@@ -109,9 +115,20 @@ if __name__ == '__main__':
     # Initialize Cropper and Matcher
     cropper = Cropper(args.width, args.cam, args.min_size)
 
+    threshold = 0.4
+    if args.output_ensemble:
+        if args.label_dir.split('/')[-1] in NIGHT:
+            threshold = THRESHOLD_NIGHT[args.cam]
+        else:
+            threshold = THRESHOLD_MORN[args.cam]
+    else:
+        threshold = 0.4
+    print(f'date : {args.label_dir.split('/')[-1]}, cam : {args.cam}')
+    print(f'threshold : {threshold}, buffer_size : {BUFFER_SIZE[args.cam]}')
+
 
     #basic threshold = 0.5
-    matcher = Matcher(threshold=args.threshold, buffer_size=args.buffer_size, lambda_value=args.lambda_value)
+    matcher = Matcher(threshold=threshold, buffer_size=BUFFER_SIZE[args.cam], lambda_value=args.lambda_value)
     palette = Palette()
 
     # Perform object tracking for each frame
