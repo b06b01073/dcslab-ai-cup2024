@@ -27,6 +27,8 @@ if __name__ == '__main__':
     else:
         save_path = os.path.join(args.result_dir, args.cam, args.model)
     os.makedirs(save_path, exist_ok=True)
+
+    # Determine which date list to use based on the time argument
     if args.time == 'm':
         f = open(f'{save_path}/{args.parameter}.txt', 'w')
         date_list = ['0902_150000_151900', '0903_150000_151900', '0924_150000_151900', '0925_150000_151900','1015_150000_151900']
