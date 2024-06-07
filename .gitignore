@@ -21,7 +21,7 @@ video_result_ensemble
 yolov8
 .config
 *.txt
-!yolov9/requirements.txtㄜ
+!yolov9/requirements.txt
 aicup_ts_ensemble
 ts_result_ensemble
 cross_cams
