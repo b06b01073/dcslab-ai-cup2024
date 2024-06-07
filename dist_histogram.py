@@ -18,7 +18,13 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f'model is running on {device}.')
 
 def draw_histogram(data, name):
-    
+    """
+    Draws a histogram of the given data.
+
+    Args:
+    - data (list or np.array): The data to plot in the histogram.
+    - name (str): The filename to save the histogram as.
+    """
     hist, bins = np.histogram(data, bins=np.arange(-0.5, 1, 0.05))
     plt.bar(bins[:-1], hist, width=0.05, color='skyblue', edgecolor='black')
     plt.xlabel('dist')
@@ -27,7 +33,14 @@ def draw_histogram(data, name):
     plt.savefig(f'{name}.jpg')
     plt.close()
 def draw_histogram2(data1, data2, name):
-    
+    """
+    Draws a comparative histogram of two sets of data.
+
+    Args:
+    - data1 (list or np.array): The first set of data to plot.
+    - data2 (list or np.array): The second set of data to plot.
+    - name (str): The filename to save the histogram as.
+    """
     hist1, bins1 = np.histogram(data1, bins=np.arange(-0.5, 1, 0.05))
     hist2, bins2 = np.histogram(data2, bins=np.arange(-0.5, 1, 0.05))
     plt.bar(bins1[:-1], hist1, width=0.05, color='skyblue', edgecolor='black', alpha=0.5, label='intra')
@@ -37,7 +50,18 @@ def draw_histogram2(data1, data2, name):
 
     plt.savefig(f'{name}.jpg')
     plt.close()
+
 def get_random_id(current_id, id_list):
+    """
+    Get a random ID from id_list that is different from current_id.
+
+    Args:
+    - current_id (str): The current ID to avoid.
+    - id_list (list): The list of all IDs to choose from.
+
+    Returns:
+    - random_id (str): A random ID different from current_id.
+    """
     random_id = random.choice(id_list)
     while(random_id == current_id):
         random_id = random.choice(id_list)
@@ -45,6 +69,16 @@ def get_random_id(current_id, id_list):
     return random_id
 
 def cal_ave_embedding(embedding_dict):
+    """
+    Calculate the average embedding for each camera in embedding_dict.
+
+    Args:
+    - embedding_dict (dict): Dictionary with camera IDs as keys and list of embeddings as values.
+
+    Returns:
+    - dist_list (list): List of average embeddings.
+    - all_keys (list): List of camera IDs corresponding to the embeddings.
+    """
     all_keys = list(embedding_dict.keys())
     dist_list = []
     for key in all_keys:
@@ -54,6 +88,19 @@ def cal_ave_embedding(embedding_dict):
 
 @torch.no_grad()
 def get_emdebbing(date_folder, id_, transform, extractor):
+    """
+    Get embeddings for all images of a given ID on a specific date.
+
+    Args:
+    - date_folder (str): Path to the folder containing the images for the date.
+    - id_ (str): ID of the objects to process.
+    - transform (transforms.Compose): Transformation to apply to the images.
+    - extractor (torch model): Pre-trained model to extract embeddings.
+
+    Returns:
+    - embedding_list (list): List of average embeddings for each camera.
+    - cam_list (list): List of camera IDs corresponding to the embeddings.
+    """
     id_folder = os.path.join(date_folder, id_)
     object_list = os.listdir(id_folder)
 
