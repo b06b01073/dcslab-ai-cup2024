@@ -61,6 +61,9 @@ if __name__ == '__main__':
     parser.add_argument('--threshold', '-t', type=float, default=0.4)
     parser.add_argument('--mode', type=str, default='max', help='Specify the distance calculation method to be used.')
     parser.add_argument('--finetune', default=False, type=bool, help='Specify whether in finetune mode')
+    parser.add_argument('--frame_dir', '-f', type=str, help='Directory containing input video frames.')
+    parser.add_argument('--label_dir', '-l', type=str, help='Directory containing labels for input frames.')
+    parser.add_argument('--out', type=str, help='Directory to save the output labels.')
     args = parser.parse_args()
 
     # Dictionary to map modes to their corresponding functions
@@ -73,7 +76,7 @@ if __name__ == '__main__':
 
 
 
-    out_folder = os.path.join(f'RE_FINAL_result_v3','labels', f'{args.model}_{args.mode}_{int(args.threshold)}',f'{args.date}')
+    out_folder = os.path.join(args.out,'labels', f'{args.model}_{args.mode}_{int(args.threshold)}',f'{args.date}')
 
 
     # To check if it's in fine-tune mode
@@ -112,12 +115,14 @@ if __name__ == '__main__':
         #basic threshold = 0.5
         matcher = Matcher(threshold=args.threshold)
 
+
+        label_dir = os.path.join(args.label_dir, f'swin_reid/{cam}')
         #check if the output of the single camera tracking.
-        if not os.path.exists(f'RE_RESULT/labels/{args.date}/swin_reid/{cam}'):
+        if not os.path.exists(label_dir):
             print(f'The output from camera {cam} does not exist.')
             continue
         # Set up the FrameLoader to load frames
-        frameloader = FrameLoader(f'../32_33_AI_CUP_testdataset/AI_CUP_testdata/images/{args.date}', f'RE_RESULT/labels/{args.date}/swin_reid/{cam}')
+        frameloader = FrameLoader(args.frame_dir, label_dir)
 
         # Load data for the current camera
         imgs, labels = frameloader.load(cam)

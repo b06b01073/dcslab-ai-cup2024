@@ -9,7 +9,7 @@ def load_confidence(confidence_folder):
     Returns:
     list: List of confidence values extracted from the files.
     """
-    confidence_files = os.listdir(confidence_folder)
+    confidence_files = sorted(os.listdir(confidence_folder))
     confidence_list = []
     for confidence_file in confidence_files:
         with open(os.path.join(confidence_folder,confidence_file), 'r') as file:
@@ -58,10 +58,14 @@ def modify_file(input_file, output_file, confidence_list):
             file.write(line + '\n')
 
 # Iterate over all files in the specified subfolder and modify them
-subfolder_path = "MOT15/RE_firstSub"
-confidence_path = '../detect_result_confidence'
-for subfolder_name, confidence_folder in zip(os.listdir(subfolder_path), os.listdir(confidence_path)):
-    input_file = f"MOT15/RE_firstSub/{subfolder_name}"
+subfolder_path = "MOT15/MULTI_MATCH_RESULT"
+confidence_path = '../detect_results'
+
+for subfolder_name in os.listdir(subfolder_path):
+    
+    confidence_folder = subfolder_name.split('.')[0]
+    print(confidence_folder)
+    input_file = f"MOT15/MULTI_MATCH_RESULT/{subfolder_name}"
     output_folder = os.path.join(f'postprocess',f'{subfolder_path}')
     if not os.path.exists(output_folder):
         os.makedirs(output_folder, exist_ok=True)
