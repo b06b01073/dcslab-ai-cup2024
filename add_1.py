@@ -16,7 +16,6 @@ def load_confidence(confidence_folder):
             lines = file.readlines()
         for line in lines:
             parts = line.strip().split(' ')
-            print(parts[-1])
             confidence_list.append(parts[-1])
 
     return confidence_list
