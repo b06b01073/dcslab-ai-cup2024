@@ -17,27 +17,6 @@ Read this [page](https://hackmd.io/@2aRuhhznQfOr_IvFkBUYKQ/SJ0KESMzR) first befo
 ```
 conda env create -f environment.yml
 ```
-若為windows則依序安裝下列package:
-```
-conda create --name aicup2024 python=3.12
-conda activate aicup2024
-conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
-conda install pandas
-conda install anaconda::scipy
-conda install conda-forge::tqdm
-conda install anaconda::xmltodict
-pip install opencv-python
-pip install loguru
-```
-若出現以下錯誤:
-```
-ImportError: libGL.so.1: cannot open shared object file: No such file or directory
-```
-執行以下指令:
-```
-pip uninstall opencv-python
-pip install opencv-python-headless
-```
 
 環境建立完成後:
 ```
@@ -46,7 +25,7 @@ conda activate aicup2024
 ## single camera tracking 用法
 1. git clone
 ```
-git clone https://github.com/Jonas0126/dcslab-ai-cup2024.git
+git clone https://github.com/b06b01073/dcslab-ai-cup2024.git
 ```
 2. 準備資料集，目錄結構如下:
 ```
@@ -81,7 +60,7 @@ IMAGE
 ```
 3. 執行 main.py
 ```
-python main.py -f IMAGE/0902_150000_151900/ -l LABEL/0902_150000_151900/ --out aicup_ts/labels/0902_150000_151900 --cam 0
+python main.py -f IMAGE/0902_150000_151900/ -l LABEL/0902_150000_151900/ --out aicup_ts/labels/0902_150000_151900 --cam 0 --model swin_reid
 ```
   * --frame_dir：輸入畫面的目錄。
   * --label_dir：輸入標籤的目錄。
@@ -113,8 +92,8 @@ aicup_test/labels/0902_150000_151900
 ├── 6
 └── 7
 ```
-## evaluation.py 使用方法
-1. 使用parseAicup.py將aicup的label根據cam編號分成8個資料夾
+## evaluate.py 使用方法
+1. 使用parseAicup.py將aicup ground truth的label根據cam編號分成8個資料夾
 ```
 python parseAicup.py -s aicup_gt/labels/0902_150000_151900 -l LABEL/0902_150000_151900/
 ```
@@ -145,17 +124,16 @@ ts_result
 ## fine-tune參數使用方法
 若要評估單一模型執行track_evaluation.sh，track_evaluation.sh會遍歷所有模型所有日期以及相機
 ```
-./track_evaluation.sh -p threshold -s 50 -e 60 -t 1 -v False -d m
+./track_evaluation.sh -p threshold -s 50 -e 60 -t 1 -d m
 ```
 
 若要評估集成模型執行track_evaluation._ensemble.sh，
 ```
-./track_evaluation.sh -p threshold -s 50 -e 60 -t 1 -v False -d m
+./track_evaluation.sh -p threshold -s 50 -e 60 -t 1 -d m
 ```
 * -p : 指定fine-tune的參數，[buffer_size, threshold]
 * -s 、 -e 、-t : 設置參數的區間，-s代表參數開始的值，-e代表參數結束的值，-t代表步長，因為shell script無法運算浮點數，
     因此在輸入參數時需要將值都乘以100，例如threshold的區間為0.5至0.6，步長為0.01，則須輸入-s 50 -e 60 -t 1。
-* -v : 設定使否要輸出影片
 * -d : 設定使用早上還是晚上的資料集，m代表使用早上的資料集，n代表使用晚上的資料集
 
 若為單一模型則評分結果會儲存在ts_result目錄下以cam編號為名字的目錄裡面的文字檔，檔名為fine-tune的參數，如下所示:
@@ -170,24 +148,51 @@ buffer_size 1.0, AVE IDF1 : 0.8576504865060863, AVE MOTA : 0.9541107325987048
 buffer_size 2.0, AVE IDF1 : 0.9355950572352348, AVE MOTA : 0.9698999148566754
 ```
 
+## Multi-Camera tracking 用法
+1. 執行 main.py
+```
+python multi_match.py --date 0920_150000_151900 --model swin_reid --mode min --finetune True -t 40 -f ../32_33_AI_CUP_testdataset/AI_CUP_testdata/images/0920_150000_151900 -l RE_RESULT/labels/0920_150000_151900 --out MULTI_MATCH_RESULT
+```
+  * --frame_dir、-f：輸入畫面的目錄。
+  * --label_dir、-l：single camera tracking輸出的結果的目錄。
+  * --model：用於特徵提取的模型的名稱（默認為 'resnet101_ibn_a'）。
+  * --out：保存輸出的目錄。
+  * --width：裁剪圖片的寬度（默認為 224）。
+  * --threshold：相似度閥值。
+  * --date : 輸入畫面的拍攝日期
+  * --finetune : 指定是否為fine-tune模式
+  * --mode : 相似度計算的方式，{min, max, ave_v1, ave_v2}
+      * $min$ $d(C_i, C_j)$ : $\mathop{\min}_{a \in C_i, b \in C_j} d(a,b)$
+
+
+    * $max$ $d(C_i, C_j)$ : $\mathop{\max}_{a \in C_i, b \in C_j} d(a,b)$
+
+
+    * $ave\_{v1}$ $d(C_i,C_j)$ : $\sum_{a \in C_i,b \in C_j} \frac{d(a,b)}{|C_i||C_j|}$
+
+
+    * $ave\_v2$ $d(C_i,C_j)$ : $d(\frac{\sum_{a \in C_i}a}{|C_i|}, \frac{\sum_{b \in C_j}b}{|C_j|})$
+
+    * $d(a,b)$是Cosine Similarity
+    * 
+## 評估Multi-Camera Tracking的結果
+1. 將ground truth的label和Multi-Camera Tracking的結果轉換成MOT15格式
+```
+python tools/datasets/AICUP_to_MOT15.py --AICUP_dir LABEL/labels/0902_150000_151900 --MOT15_dir MOT15/multi_cam_gt
+```
+```
+python tools/datasets/AICUP_to_MOT15.py --AICUP_dir MULTI_MATCH_RESULT/labels/swin_reid_min_40/0902_150000_151900 --MOT15_dir MOT15/MULTI_MATCH_RESULT/
+```
+2. 執行evaluate.py
+```
+python tools/evaluate.py --gt_dir MOT15/multi_cam_gt/ --ts_dir MOT15/MULTI_MATCH_RESULT/swin_reid_min_40
+```
 ## Multi-Camera Tracking Result
 |     | ave_v1 | ave_v2 | min  | max |
 | --- | ------ | ------ | ---- | --- |
 |    IDF1 |    80.7    |   63.5     |   96.2   |  57.1   |
 |     MOTA|    98.1| 96.4   | 99.7 |   96.4  |
 
-* $min$ $d(C_i, C_j)$ : $\mathop{\min}_{a \in C_i, b \in C_j} d(a,b)$
-
-
-* $max$ $d(C_i, C_j)$ : $\mathop{\max}_{a \in C_i, b \in C_j} d(a,b)$
-
-
-* $ave\_{v1}$ $d(C_i,C_j)$ : $\sum_{a \in C_i,b \in C_j} \frac{d(a,b)}{|C_i||C_j|}$
-
-
-* $ave\_v2$ $d(C_i,C_j)$ : $d(\frac{\sum_{a \in C_i}a}{|C_i|}, \frac{\sum_{b \in C_j}b}{|C_j|})$
-
-* $d(a,b)$是Cosine Similarity
 ## fine-tuned models
 ```
 # options: [resnet101_ibn_a, se_resnet101_ibn_a, densenet169_ibn_a, swin_reid, resnext101_ibn_a]
