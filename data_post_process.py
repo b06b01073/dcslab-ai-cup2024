@@ -1,4 +1,5 @@
 import os
+from argparse import ArgumentParser
 def load_confidence(confidence_folder):
     """
     Load confidence values from all files in the specified folder.
@@ -57,9 +58,12 @@ def modify_file(input_file, output_file, confidence_list):
         for line in modified_lines:
             file.write(line + '\n')
 
+parser = ArgumentParser()
+parser.add_argument('--label_dir', '-l', default='../results', type=str, help='Directory containing labels for input frames.')
+args = parser.parse_args()
 # Iterate over all files in the specified subfolder and modify them
 subfolder_path = "MOT15/MULTI_MATCH_RESULT"
-confidence_path = '../detect_results'
+confidence_path = args.label_dir
 
 for subfolder_name in os.listdir(subfolder_path):
     
