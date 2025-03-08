@@ -3,7 +3,7 @@
 [![Static Badge](https://img.shields.io/badge/Ranked_%231-2024_AI_CUP_Spring_on_Cross--Camera_Multi--Target_Vehicle_Tracking-blue?style=flat&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48IS0tIUZvbnQgQXdlc29tZSBGcmVlIDYuNS4yIGJ5IEBmb250YXdlc29tZSAtIGh0dHBzOi8vZm9udGF3ZXNvbWUuY29tIExpY2Vuc2UgLSBodHRwczovL2ZvbnRhd2Vzb21lLmNvbS9saWNlbnNlL2ZyZWUgQ29weXJpZ2h0IDIwMjQgRm9udGljb25zLCBJbmMuLS0+PHBhdGggZmlsbD0iI0ZGRDQzQiIgZD0iTTQuMSAzOC4yQzEuNCAzNC4yIDAgMjkuNCAwIDI0LjZDMCAxMSAxMSAwIDI0LjYgMEgxMzMuOWMxMS4yIDAgMjEuNyA1LjkgMjcuNCAxNS41bDY4LjUgMTE0LjFjLTQ4LjIgNi4xLTkxLjMgMjguNi0xMjMuNCA2MS45TDQuMSAzOC4yem01MDMuNyAwTDQwNS42IDE5MS41Yy0zMi4xLTMzLjMtNzUuMi01NS44LTEyMy40LTYxLjlMMzUwLjcgMTUuNUMzNTYuNSA1LjkgMzY2LjkgMCAzNzguMSAwSDQ4Ny40QzUwMSAwIDUxMiAxMSA1MTIgMjQuNmMwIDQuOC0xLjQgOS42LTQuMSAxMy42ek04MCAzMzZhMTc2IDE3NiAwIDEgMSAzNTIgMEExNzYgMTc2IDAgMSAxIDgwIDMzNnptMTg0LjQtOTQuOWMtMy40LTctMTMuMy03LTE2LjggMGwtMjIuNCA0NS40Yy0xLjQgMi44LTQgNC43LTcgNS4xTDE2OCAyOTguOWMtNy43IDEuMS0xMC43IDEwLjUtNS4yIDE2bDM2LjMgMzUuNGMyLjIgMi4yIDMuMiA1LjIgMi43IDguM2wtOC42IDQ5LjljLTEuMyA3LjYgNi43IDEzLjUgMTMuNiA5LjlsNDQuOC0yMy42YzIuNy0xLjQgNi0xLjQgOC43IDBsNDQuOCAyMy42YzYuOSAzLjYgMTQuOS0yLjIgMTMuNi05LjlsLTguNi00OS45Yy0uNS0zIC41LTYuMSAyLjctOC4zbDM2LjMtMzUuNGM1LjYtNS40IDIuNS0xNC44LTUuMi0xNmwtNTAuMS03LjNjLTMtLjQtNS43LTIuNC03LTUuMWwtMjIuNC00NS40eiIvPjwvc3ZnPg==)
 ](https://tbrain.trendmicro.com.tw/Competitions/Details/33)
 
-## Rules of conduct
+## Code of conduct
 
 Read this [page](https://hackmd.io/@2aRuhhznQfOr_IvFkBUYKQ/SJ0KESMzR) first before you start working on this project.
 
@@ -13,7 +13,7 @@ Read this [page](https://hackmd.io/@2aRuhhznQfOr_IvFkBUYKQ/SJ0KESMzR) first befo
 可以透過track_evaluation.sh進行fine-tune.
 
 ## 環境建立
-如果是使用linux環境，輸入以下指令即可:
+如果是使用Linux環境，輸入以下指令即可:
 ```
 conda env create -f environment.yml
 ```
@@ -174,7 +174,7 @@ python multi_match.py --date 0920_150000_151900 --model swin_reid --mode min --f
     * $ave\_v2$ $d(C_i,C_j)$ : $d(\frac{\sum_{a \in C_i}a}{|C_i|}, \frac{\sum_{b \in C_j}b}{|C_j|})$
 
     * $d(a,b)$是Cosine Similarity
-    * 
+
 ## 評估Multi-Camera Tracking的結果
 1. 將ground truth的label和Multi-Camera Tracking的結果轉換成MOT15格式
 ```
@@ -188,10 +188,13 @@ python tools/datasets/AICUP_to_MOT15.py --AICUP_dir MULTI_MATCH_RESULT/labels/sw
 python tools/evaluate.py --gt_dir MOT15/multi_cam_gt/ --ts_dir MOT15/MULTI_MATCH_RESULT/swin_reid_min_40
 ```
 ## Multi-Camera Tracking Result
+
 |     | ave_v1 | ave_v2 | min  | max |
 | --- | ------ | ------ | ---- | --- |
 |    IDF1 |    80.7    |   63.5     |   96.2   |  57.1   |
 |     MOTA|    98.1| 96.4   | 99.7 |   96.4  |
+
+Note: we use the bounding boxes provided by ground truth.
 
 ## fine-tuned models
 ```
